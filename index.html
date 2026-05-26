@@ -97,8 +97,10 @@
       gap: 8px;
       padding: 8px;
       height: 100%;
-      overflow-x: auto;
+      overflow-x: scroll;
       scrollbar-width: none;
+      cursor: grab;
+      touch-action: none;
     }
     #row-term-inner::-webkit-scrollbar { display: none; }
     .row-term-fade {
@@ -731,6 +733,7 @@
   document.addEventListener('click', e => {
     const t = e.target.closest('[data-char],[data-action]');
     if (!t || t === trackpoint) return;
+    if (tsDidDrag && t.closest('#row-term-inner')) { tsDidDrag = false; return; }
     const ch  = t.dataset.char;
     const act = t.dataset.action;
 
@@ -766,6 +769,32 @@
     if (!e.ctrlKey && !e.metaKey && !e.altKey && e.key.length === 1) {
       typeChar(e.key);
     }
+  });
+
+  // ── Touch-bar drag-scroll ─────────────────────
+  const termInner = document.getElementById('row-term-inner');
+  let tsDown = false, tsDidDrag = false, tsX0 = 0, tsSL0 = 0;
+
+  termInner.addEventListener('pointerdown', e => {
+    tsDown = true; tsDidDrag = false;
+    tsX0 = e.clientX; tsSL0 = termInner.scrollLeft;
+    termInner.style.cursor = 'grabbing';
+  });
+  termInner.addEventListener('pointermove', e => {
+    if (!tsDown) return;
+    const dx = e.clientX - tsX0;
+    if (Math.abs(dx) > 3) {
+      tsDidDrag = true;
+      termInner.scrollLeft = tsSL0 - dx;
+    }
+  });
+  termInner.addEventListener('pointerup', () => {
+    tsDown = false;
+    termInner.style.cursor = '';
+  });
+  termInner.addEventListener('pointercancel', () => {
+    tsDown = false; tsDidDrag = false;
+    termInner.style.cursor = '';
   });
 
   // ── Variant toggle ────────────────────────────
