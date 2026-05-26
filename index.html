@@ -281,6 +281,43 @@
     .bkey-dot   { width: 38px; background: #2d2d2d; font-size: 16px; font-weight: 500; box-shadow: 0 1.125px 0 #2a2a2a; }
     .bkey-done  { width: 62px; background: #636363; font-size: 18px; box-shadow: 0 1.125px 0 #2a2a2a; color: #eee; }
 
+    /* ── VARIANT TOGGLE ───────────────────────────── */
+    #variant-toggle {
+      display: flex;
+      gap: 2px;
+      padding: 0 10px;
+      background: #0a0a0a;
+      border-bottom: 1px solid #181818;
+      align-items: center;
+      justify-content: flex-end;
+      flex-shrink: 0;
+      height: 20px;
+    }
+    .vtab {
+      width: 18px; height: 14px;
+      font-size: 10px;
+      font-family: inherit;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 3px;
+      color: #444;
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .vtab.active { background: #252525; color: #bbb; }
+
+    /* ── VARIANT 2 overrides ───────────────────────── */
+    body.v2 #trackpoint { display: none; }
+    body.v2 .bkey-space {
+      align-items: flex-end;
+      padding-bottom: 5px;
+      color: #2e2e2e;
+      font-size: 11px;
+      cursor: grab;
+      touch-action: none;
+    }
+    body.v2 .bkey-space:active { filter: none; }
+
     /* ── RADIAL TRACKPOINT OVERLAY ────────────────── */
     #tp-radial {
       position: fixed;
@@ -324,6 +361,12 @@
 </head>
 <body>
 <div id="app">
+
+  <!-- ── VARIANT TOGGLE ────────────────────────────────── -->
+  <div id="variant-toggle">
+    <span class="vtab active" id="vt1" data-v="1">1</span>
+    <span class="vtab"        id="vt2" data-v="2">2</span>
+  </div>
 
   <!-- ── TERMINAL: single scrollable area, prompt inline ── -->
   <div id="terminal"></div>
@@ -668,6 +711,7 @@
     const act = t.dataset.action;
 
     if (ch !== undefined) {
+      if (variant === 2 && ch === ' ') return; // spacebar is drag pad in v2
       if (/^[a-zA-Z]$/.test(ch)) {
         if (ctrl) { handleCtrlKey(ch.toLowerCase()); return; }
         const out = shift ? ch.toUpperCase() : ch.toLowerCase();
@@ -699,6 +743,55 @@
       typeChar(e.key);
     }
   });
+
+  // ── Variant toggle ────────────────────────────
+  let variant = 1;
+  const spaceBtn = document.querySelector('.bkey-space');
+
+  function setVariant(v) {
+    variant = v;
+    document.body.classList.toggle('v2', v === 2);
+    document.getElementById('vt1').classList.toggle('active', v === 1);
+    document.getElementById('vt2').classList.toggle('active', v === 2);
+  }
+
+  document.getElementById('variant-toggle').addEventListener('click', e => {
+    const t = e.target.closest('.vtab');
+    if (t) setVariant(parseInt(t.dataset.v));
+  });
+
+  // ── v2: spacebar drag pad ─────────────────────
+  const SP_STEP = 7;
+  let spDown = false, spLastX = 0, spLastY = 0, spAccX = 0, spAccY = 0;
+
+  spaceBtn.addEventListener('pointerdown', e => {
+    if (variant !== 2) return;
+    spDown = true;
+    spLastX = e.clientX; spLastY = e.clientY;
+    spAccX = 0; spAccY = 0;
+    spaceBtn.setPointerCapture(e.pointerId);
+    spaceBtn.style.cursor = 'grabbing';
+    e.preventDefault();
+  });
+
+  spaceBtn.addEventListener('pointermove', e => {
+    if (!spDown || variant !== 2) return;
+    const dx = e.clientX - spLastX, dy = e.clientY - spLastY;
+    spLastX = e.clientX; spLastY = e.clientY;
+    spAccX += dx; spAccY += dy;
+    while (spAccX >=  SP_STEP) { handleArrow('right'); spAccX -= SP_STEP; }
+    while (spAccX <= -SP_STEP) { handleArrow('left');  spAccX += SP_STEP; }
+    while (spAccY >=  SP_STEP) { handleArrow('down');  spAccY -= SP_STEP; }
+    while (spAccY <= -SP_STEP) { handleArrow('up');    spAccY += SP_STEP; }
+    e.preventDefault();
+  });
+
+  function spStop() {
+    spDown = false;
+    spaceBtn.style.cursor = '';
+  }
+  spaceBtn.addEventListener('pointerup',     spStop);
+  spaceBtn.addEventListener('pointercancel', spStop);
 
   // ── Trackpoint — radial pie-menu ─────────────
   const radial  = document.getElementById('tp-radial');
