@@ -9,68 +9,69 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    html, body {
-      width: 540px;
-      height: 620px;
+    html { height: 100%; background: #000; }
+    body {
+      min-height: 100vh;
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       overflow: hidden;
-      background: #0f0f0f;
     }
 
     #app {
       width: 540px;
       height: 620px;
+      flex-shrink: 0;
       display: flex;
       flex-direction: column;
       font-family: 'JetBrains Mono', monospace;
+      overflow: hidden;
     }
 
     /* ── TERMINAL ──────────────────────────────── */
     #terminal {
       flex: 1 1 0;
       min-height: 0;
-      display: flex;
-      flex-direction: column;
       background: #0f0f0f;
-      padding: 10px 14px 8px;
-    }
-
-    #output {
-      flex: 1 1 0;
-      min-height: 0;
       overflow-y: auto;
+      padding: 10px 14px;
       scrollbar-width: thin;
       scrollbar-color: #2a2a2a transparent;
     }
-    #output::-webkit-scrollbar { width: 3px; }
-    #output::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 2px; }
+    #terminal::-webkit-scrollbar { width: 3px; }
+    #terminal::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 2px; }
 
-    .line { font-size: 13px; line-height: 1.65; white-space: pre-wrap; word-break: break-all; }
-    .line-cmd { color: #eee; }
-    .line-cmd::before { content: '$ '; color: #4a4a4a; }
-    .line-out  { color: #888; padding-left: 14px; }
-    .line-err  { color: #e06c75; padding-left: 14px; }
-    .line-info { color: #61afef; padding-left: 14px; }
-
-    #input-line {
-      display: flex;
-      align-items: center;
-      padding-top: 6px;
-      border-top: 1px solid #1a1a1a;
-      margin-top: 4px;
-      flex-shrink: 0;
-      min-height: 26px;
+    /* Every line in the terminal */
+    .line {
+      font-size: 13px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-all;
+      min-height: 1.7em;
     }
-    #prompt { color: #4a4a4a; font-size: 13px; margin-right: 2px; user-select: none; flex-shrink: 0; }
-    #input-before { font-size: 13px; color: #eee; font-family: inherit; white-space: pre; }
-    #cursor {
+
+    /* Output lines */
+    .line-out  { color: #888; }
+    .line-err  { color: #e06c75; }
+    .line-info { color: #61afef; }
+
+    /* Prompt colors — used in both active and frozen cmd lines */
+    .p-name { color: #98c379; }           /* user@termkeyboard */
+    .p-col  { color: #abb2bf; }           /* : */
+    .p-path { color: #e5c07b; }           /* ~ */
+    .p-dol  { color: #abb2bf; }           /* $ */
+    .p-text { color: #eee; }              /* typed text */
+
+    /* Blinking block cursor */
+    .p-cursor {
       display: inline-block;
-      width: 7px; height: 14px;
-      background: #bbb;
-      vertical-align: middle;
-      flex-shrink: 0;
+      width: 7.8px;
+      height: 1em;
+      background: #abb2bf;
+      vertical-align: text-bottom;
       animation: blink 1s step-end infinite;
     }
-    #input-after { font-size: 13px; color: #eee; font-family: inherit; white-space: pre; flex: 1; }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
 
     /* ── KEYBOARD WRAPPER ──────────────────────── */
@@ -121,14 +122,13 @@
     }
 
     #keys-layout {
-      position: relative;  /* needed for trackpoint absolute positioning */
+      position: relative;
       display: flex;
       flex-direction: column;
       gap: 10px;
       padding: 10px 0;
     }
 
-    /* Standard 44×44 key */
     .key {
       width: 44px;
       height: 44px;
@@ -156,18 +156,15 @@
     }
     .row-pad { padding: 0 5px; }
 
-    /* Alpha/num mode toggles */
     .alpha-row   { display: flex; }
     .num-row     { display: none; }
     .alpha-shift { display: block; }
     .num-shift   { display: none; }
-
     body.num-mode .alpha-row   { display: none; }
     body.num-mode .num-row     { display: flex; }
     body.num-mode .alpha-shift { display: none; }
     body.num-mode .num-shift   { display: block; }
 
-    /* Shift row — left/right anchored with absolute children */
     .row-shift {
       position: relative;
       height: 44px;
@@ -206,19 +203,10 @@
     .key-del:active { background: #666; }
 
     /* ── TRACKPOINT ────────────────────────────── */
-    /*
-      Positioned between G/H (row 2) and V/B (row 3).
-      Row 2 bottom edge = 10(pad) + 44 + 10(gap) + 44 = 108px from keys-layout top.
-      Row 3 top = 118px. Gap center = 113px. Trackpoint center-y = 113.
-      G right edge = 292px from row left. H left = 302px. Gap center-x = 297.
-      34×34: top = 113-17 = 96, left = 297-17 = 280.
-    */
     #trackpoint {
       position: absolute;
-      top: 96px;
-      left: 280px;
-      width: 34px;
-      height: 34px;
+      top: 96px; left: 280px;
+      width: 34px; height: 34px;
       border-radius: 8px;
       background: #181818;
       border: 1px solid #2e2e2e;
@@ -232,17 +220,11 @@
       box-shadow: 0 1px 4px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.04);
     }
     #trackpoint.dragging { cursor: grabbing; }
-
-    /* The nub dot */
     #tp-nub {
-      width: 13px;
-      height: 13px;
+      width: 13px; height: 13px;
       border-radius: 50%;
       background: radial-gradient(circle at 38% 35%, #d4d4d4, #7a7a7a);
-      box-shadow:
-        0 1px 3px rgba(0,0,0,0.9),
-        0 0 0 1.5px #111,
-        inset 0 1px 1px rgba(255,255,255,0.25);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.9), 0 0 0 1.5px #111, inset 0 1px 1px rgba(255,255,255,0.25);
       pointer-events: none;
       transition: transform 0.06s ease;
     }
@@ -256,7 +238,6 @@
       padding: 0 8px;
       height: 44px;
     }
-
     .bkey {
       height: 44px;
       display: flex;
@@ -270,7 +251,6 @@
       flex-shrink: 0;
     }
     .bkey:active { filter: brightness(1.4); }
-
     .bkey-kbd   { width: 52px; background: #3a3a3a; border-bottom: 1px solid #2a2a2a; }
     .bkey-123   { width: 64px; background: #2d2d2d; font-size: 16px; font-weight: 700; box-shadow: 0 1.125px 0 #2a2a2a; }
     .bkey-fn    { width: 40px; background: #2d2d2d; font-size: 18px; font-weight: 500; box-shadow: 0 1.125px 0 #2a2a2a; }
@@ -283,18 +263,11 @@
 <body>
 <div id="app">
 
-  <!-- ── TERMINAL ─────────────────────────────── -->
-  <div id="terminal">
-    <div id="output"></div>
-    <div id="input-line">
-      <span id="prompt">$&nbsp;</span><span id="input-before"></span><span id="cursor"></span><span id="input-after"></span>
-    </div>
-  </div>
+  <!-- ── TERMINAL: single scrollable area, prompt inline ── -->
+  <div id="terminal"></div>
 
-  <!-- ── KEYBOARD ─────────────────────────────── -->
+  <!-- ── KEYBOARD ──────────────────────────────────────── -->
   <div id="keyboard">
-
-    <!-- Row 0: terminal utility keys -->
     <div id="row-term">
       <div class="tkey tkey-esc"  data-action="esc">esc</div>
       <div class="tkey tkey-tab"  data-action="tab">tab</div>
@@ -312,98 +285,62 @@
     <div id="kbd-body">
       <div id="keys-layout">
 
-        <!-- Row 1 alpha: QWERTYUIOP -->
         <div class="row alpha-row">
-          <div class="key" data-char="q">Q</div>
-          <div class="key" data-char="w">W</div>
-          <div class="key" data-char="e">E</div>
-          <div class="key" data-char="r">R</div>
-          <div class="key" data-char="t">T</div>
-          <div class="key" data-char="y">Y</div>
-          <div class="key" data-char="u">U</div>
-          <div class="key" data-char="i">I</div>
-          <div class="key" data-char="o">O</div>
-          <div class="key" data-char="p">P</div>
+          <div class="key" data-char="q">Q</div><div class="key" data-char="w">W</div>
+          <div class="key" data-char="e">E</div><div class="key" data-char="r">R</div>
+          <div class="key" data-char="t">T</div><div class="key" data-char="y">Y</div>
+          <div class="key" data-char="u">U</div><div class="key" data-char="i">I</div>
+          <div class="key" data-char="o">O</div><div class="key" data-char="p">P</div>
         </div>
-
-        <!-- Row 1 num: 1234567890 -->
         <div class="row num-row">
-          <div class="key" data-char="1">1</div>
-          <div class="key" data-char="2">2</div>
-          <div class="key" data-char="3">3</div>
-          <div class="key" data-char="4">4</div>
-          <div class="key" data-char="5">5</div>
-          <div class="key" data-char="6">6</div>
-          <div class="key" data-char="7">7</div>
-          <div class="key" data-char="8">8</div>
-          <div class="key" data-char="9">9</div>
-          <div class="key" data-char="0">0</div>
+          <div class="key" data-char="1">1</div><div class="key" data-char="2">2</div>
+          <div class="key" data-char="3">3</div><div class="key" data-char="4">4</div>
+          <div class="key" data-char="5">5</div><div class="key" data-char="6">6</div>
+          <div class="key" data-char="7">7</div><div class="key" data-char="8">8</div>
+          <div class="key" data-char="9">9</div><div class="key" data-char="0">0</div>
         </div>
 
-        <!-- Row 2 alpha: ASDFGHJKL -->
         <div class="row row-pad alpha-row">
-          <div class="key" data-char="a">A</div>
-          <div class="key" data-char="s">S</div>
-          <div class="key" data-char="d">D</div>
-          <div class="key" data-char="f">F</div>
-          <div class="key" data-char="g">G</div>
-          <div class="key" data-char="h">H</div>
-          <div class="key" data-char="j">J</div>
-          <div class="key" data-char="k">K</div>
+          <div class="key" data-char="a">A</div><div class="key" data-char="s">S</div>
+          <div class="key" data-char="d">D</div><div class="key" data-char="f">F</div>
+          <div class="key" data-char="g">G</div><div class="key" data-char="h">H</div>
+          <div class="key" data-char="j">J</div><div class="key" data-char="k">K</div>
           <div class="key" data-char="l">L</div>
         </div>
-
-        <!-- Row 2 num: @#$%^()[] -->
         <div class="row row-pad num-row">
-          <div class="key" data-char="@">@</div>
-          <div class="key" data-char="#">#</div>
-          <div class="key" data-char="$">$</div>
-          <div class="key" data-char="%">%</div>
-          <div class="key" data-char="^">^</div>
-          <div class="key" data-char="(">(</div>
-          <div class="key" data-char=")">)</div>
-          <div class="key" data-char="[">[</div>
+          <div class="key" data-char="@">@</div><div class="key" data-char="#">#</div>
+          <div class="key" data-char="$">$</div><div class="key" data-char="%">%</div>
+          <div class="key" data-char="^">^</div><div class="key" data-char="(">(</div>
+          <div class="key" data-char=")">)</div><div class="key" data-char="[">[</div>
           <div class="key" data-char="]">]</div>
         </div>
 
-        <!-- Row 3 alpha: ⇧ + ZXCVBNM + ⌫ -->
         <div class="row-shift alpha-shift">
           <div class="key-shift" data-action="shift" id="btn-shift">⇧</div>
           <div class="row" style="position:absolute;left:50%;transform:translateX(-50%);top:0;gap:10px;">
-            <div class="key" data-char="z">Z</div>
-            <div class="key" data-char="x">X</div>
-            <div class="key" data-char="c">C</div>
-            <div class="key" data-char="v">V</div>
-            <div class="key" data-char="b">B</div>
-            <div class="key" data-char="n">N</div>
+            <div class="key" data-char="z">Z</div><div class="key" data-char="x">X</div>
+            <div class="key" data-char="c">C</div><div class="key" data-char="v">V</div>
+            <div class="key" data-char="b">B</div><div class="key" data-char="n">N</div>
             <div class="key" data-char="m">M</div>
           </div>
           <div class="key-del" data-action="del">⌫</div>
         </div>
 
-        <!-- Row 3 num: #+< + !+={}\ ? + ⌫ -->
         <div class="row-shift num-shift">
           <div class="key-shift" style="font-size:13px;" data-action="noop">#+&lt;</div>
           <div class="row" style="position:absolute;left:50%;transform:translateX(-50%);top:0;gap:10px;">
-            <div class="key" data-char="!">!</div>
-            <div class="key" data-char="=">= </div>
-            <div class="key" data-char="+">&plus;</div>
-            <div class="key" data-char="{">{</div>
-            <div class="key" data-char="}">}</div>
-            <div class="key" data-char="\">\</div>
+            <div class="key" data-char="!">!</div><div class="key" data-char="=">=</div>
+            <div class="key" data-char="+">&plus;</div><div class="key" data-char="{">{</div>
+            <div class="key" data-char="}">}</div><div class="key" data-char="\">\</div>
             <div class="key" data-char="?">?</div>
           </div>
           <div class="key-del" data-action="del">⌫</div>
         </div>
 
-        <!-- TRACKPOINT: sits between G/H (row 2) and V/B (row 3) -->
-        <div id="trackpoint">
-          <div id="tp-nub"></div>
-        </div>
+        <div id="trackpoint"><div id="tp-nub"></div></div>
 
-      </div><!-- /#keys-layout -->
+      </div>
 
-      <!-- Bottom row -->
       <div id="row-bottom">
         <div class="bkey bkey-kbd">
           <svg width="26" height="22" viewBox="0 0 26 22" fill="none">
@@ -420,183 +357,245 @@
         <div class="bkey bkey-dot"  data-char=".">.</div>
         <div class="bkey bkey-done" data-action="enter">Done</div>
       </div>
-
-    </div><!-- /#kbd-body -->
-  </div><!-- /#keyboard -->
-</div><!-- /#app -->
+    </div>
+  </div>
+</div>
 
 <script>
-  // ── DOM refs ──────────────────────────────────
-  const outputEl   = document.getElementById('output');
-  const inputBefore = document.getElementById('input-before');
-  const inputAfter  = document.getElementById('input-after');
-  const btnShift   = document.getElementById('btn-shift');
-  const btnCtrl    = document.getElementById('btn-ctrl');
-  const btn123     = document.getElementById('btn-123');
+  const term    = document.getElementById('terminal');
+  const btnShift = document.getElementById('btn-shift');
+  const btnCtrl  = document.getElementById('btn-ctrl');
+  const btn123   = document.getElementById('btn-123');
   const trackpoint = document.getElementById('trackpoint');
 
-  // ── State ─────────────────────────────────────
-  let input     = '';
-  let cursorPos = 0;
-  let shift     = false;
-  let ctrl      = false;
-  let numMode   = false;
-  let history   = [];
-  let histIdx   = -1;
+  // ── Terminal state ────────────────────────────
+  let input      = '';
+  let cursorPos  = 0;
+  let shift      = false;
+  let ctrl       = false;
+  let numMode    = false;
+  let history    = [];
+  let histIdx    = -1;
   let savedInput = '';
 
-  // ── Render ────────────────────────────────────
-  function render() {
-    inputBefore.textContent = input.slice(0, cursorPos);
-    inputAfter.textContent  = input.slice(cursorPos);
+  // Live DOM refs into the active prompt line
+  let activeLine = null;
+  let spanBefore = null;
+  let spanAfter  = null;
+
+  // ── Prompt HTML template ──────────────────────
+  const PROMPT =
+    '<span class="p-name">user@termkeyboard</span>' +
+    '<span class="p-col">:</span>' +
+    '<span class="p-path">~</span>' +
+    '<span class="p-dol">$</span> ';
+
+  function esc(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
-  // ── Terminal output ───────────────────────────
-  function log(text, cls) {
+  // ── Spawn a new prompt line at the bottom ─────
+  function newPrompt() {
+    activeLine = document.createElement('div');
+    activeLine.className = 'line';
+    activeLine.innerHTML =
+      PROMPT +
+      '<span class="p-text"></span>' +
+      '<span class="p-cursor"> </span>' +
+      '<span class="p-text"></span>';
+    const spans = activeLine.querySelectorAll('.p-text');
+    spanBefore = spans[0];
+    spanAfter  = spans[1];
+    term.appendChild(activeLine);
+    scroll();
+  }
+
+  // ── Freeze active line into a static cmd line ─
+  function freezeLine(cmdText, cls) {
+    activeLine.innerHTML = PROMPT + '<span class="' + (cls||'p-text') + '">' + esc(cmdText) + '</span>';
+    activeLine = null;
+    spanBefore = null;
+    spanAfter  = null;
+  }
+
+  function scroll() { term.scrollTop = term.scrollHeight; }
+
+  // ── Render live input into the active line ────
+  function render() {
+    if (!spanBefore) return;
+    spanBefore.textContent = input.slice(0, cursorPos);
+    spanAfter.textContent  = input.slice(cursorPos);
+    scroll();
+  }
+
+  // ── Append an output line (below active line) ─
+  function appendOutput(text, cls) {
+    // Insert before activeLine so output appears between cmd and next prompt
     const d = document.createElement('div');
     d.className = 'line ' + cls;
     d.textContent = text;
-    outputEl.appendChild(d);
-    outputEl.scrollTop = outputEl.scrollHeight;
+    if (activeLine) {
+      term.insertBefore(d, activeLine);
+    } else {
+      term.appendChild(d);
+    }
+    scroll();
   }
 
-  // ── Commands ──────────────────────────────────
+  // ── Run a command ─────────────────────────────
   function runCommand(cmd) {
     const trimmed = cmd.trim();
-    if (!trimmed) return;
-    history.unshift(trimmed);
-    histIdx = -1;
-    savedInput = '';
-    log(cmd, 'line-cmd');
+
+    // Freeze the active prompt line as a submitted command
+    freezeLine(cmd, 'p-text');
+
+    // Add to history
+    if (trimmed) { history.unshift(trimmed); histIdx = -1; savedInput = ''; }
+
+    // Process
     const parts = trimmed.split(/\s+/);
-    const base  = parts[0].toLowerCase();
+    const base  = parts[0] ? parts[0].toLowerCase() : '';
     const args  = parts.slice(1).join(' ');
+
     switch (base) {
-      case 'clear': case 'cls': outputEl.innerHTML = ''; break;
-      case 'echo':  log(args, 'line-out'); break;
+      case '':    break;
+      case 'clear': case 'cls':
+        term.innerHTML = '';
+        break;
+      case 'echo':
+        appendOutput(args, 'line-out');
+        break;
       case 'help':
-        ['clear/cls  — clear screen',
+        ['clear/cls   — clear screen',
          'echo <text> — print text',
-         'date        — current date/time',
+         'date        — show date/time',
          'pwd         — working directory',
          'env         — environment vars',
-         'CTRL+C  cancel    CTRL+L  clear',
-         'CTRL+U  clear line  CTRL+W  del word',
-         'trackpoint — drag for ← → ↑ ↓']
-        .forEach(l => log(l, 'line-info'));
+         'CTRL+C  cancel input',
+         'CTRL+L  clear screen',
+         'CTRL+U  clear line   CTRL+W  delete word',
+         'trackpoint  — drag for ← → ↑ ↓']
+        .forEach(l => appendOutput(l, 'line-info'));
         break;
-      case 'date': log(new Date().toString(), 'line-out'); break;
-      case 'pwd':  log('/home/user', 'line-out'); break;
+      case 'date':
+        appendOutput(new Date().toString(), 'line-out');
+        break;
+      case 'pwd':
+        appendOutput('/home/user', 'line-out');
+        break;
       case 'env':
-        ['TERM=termkeyboard', 'SHELL=/bin/bash',
-         'USER=user', 'HOME=/home/user']
-        .forEach(l => log(l, 'line-out'));
+        ['TERM=termkeyboard','SHELL=/bin/bash','USER=user','HOME=/home/user']
+        .forEach(l => appendOutput(l, 'line-out'));
         break;
-      default: log('bash: ' + base + ': command not found', 'line-err');
+      default:
+        appendOutput('bash: ' + base + ': command not found', 'line-err');
     }
+
+    // New prompt
+    input = ''; cursorPos = 0;
+    newPrompt();
+    render();
   }
 
-  // ── Insert char at cursor ─────────────────────
+  // ── Type a character at cursor position ───────
   function typeChar(ch) {
     input = input.slice(0, cursorPos) + ch + input.slice(cursorPos);
     cursorPos++;
     render();
   }
 
-  // ── Arrow key / history navigation ───────────
+  // ── Arrow keys / history ──────────────────────
   function handleArrow(dir) {
-    if (dir === 'left') {
-      if (cursorPos > 0) { cursorPos--; render(); }
-    } else if (dir === 'right') {
-      if (cursorPos < input.length) { cursorPos++; render(); }
-    } else if (dir === 'up') {
-      if (history.length === 0) return;
+    if (dir === 'left')  { if (cursorPos > 0) { cursorPos--; render(); } }
+    if (dir === 'right') { if (cursorPos < input.length) { cursorPos++; render(); } }
+    if (dir === 'up') {
+      if (!history.length) return;
       if (histIdx === -1) savedInput = input;
       histIdx = Math.min(history.length - 1, histIdx + 1);
-      input = history[histIdx];
-      cursorPos = input.length;
-      render();
-    } else if (dir === 'down') {
+      input = history[histIdx]; cursorPos = input.length; render();
+    }
+    if (dir === 'down') {
       if (histIdx === -1) return;
       histIdx--;
       input = histIdx === -1 ? savedInput : history[histIdx];
-      cursorPos = input.length;
-      render();
+      cursorPos = input.length; render();
     }
   }
 
-  // ── Action handler ────────────────────────────
+  // ── Action dispatcher ─────────────────────────
   function handleAction(act) {
     switch (act) {
       case 'shift':
-        shift = !shift;
-        btnShift.classList.toggle('on', shift);
-        break;
+        shift = !shift; btnShift.classList.toggle('on', shift); break;
       case 'del':
         if (cursorPos > 0) {
           input = input.slice(0, cursorPos - 1) + input.slice(cursorPos);
-          cursorPos--;
-          render();
+          cursorPos--; render();
         }
         break;
       case 'enter':
-        runCommand(input);
-        input = ''; cursorPos = 0;
-        render();
-        break;
+        runCommand(input); break;
       case 'esc':
         input = ''; cursorPos = 0;
         shift = false; btnShift.classList.remove('on');
-        render();
-        break;
+        render(); break;
       case 'tab':
         input = input.slice(0, cursorPos) + '  ' + input.slice(cursorPos);
-        cursorPos += 2; render();
-        break;
+        cursorPos += 2; render(); break;
       case 'ctrl':
-        ctrl = !ctrl;
-        btnCtrl.classList.toggle('on', ctrl);
-        break;
+        ctrl = !ctrl; btnCtrl.classList.toggle('on', ctrl); break;
       case 'toggle-num':
         numMode = !numMode;
         document.body.classList.toggle('num-mode', numMode);
-        btn123.textContent = numMode ? 'ABC' : '?123';
-        break;
+        btn123.textContent = numMode ? 'ABC' : '?123'; break;
       case 'fn': case 'noop': break;
     }
   }
 
-  // ── On-screen keyboard click delegation ───────
+  // ── CTRL + letter combos ──────────────────────
+  function handleCtrlKey(k) {
+    ctrl = false; btnCtrl.classList.remove('on');
+    switch (k) {
+      case 'c':
+        // Show ^C on current line, then new prompt
+        freezeLine(input + '^C', 'line-err');
+        input = ''; cursorPos = 0;
+        newPrompt(); render();
+        break;
+      case 'l':
+        // Clear screen, keep active line
+        if (activeLine) {
+          term.innerHTML = '';
+          term.appendChild(activeLine);
+        } else {
+          term.innerHTML = '';
+          newPrompt(); render();
+        }
+        break;
+      case 'u':
+        input = ''; cursorPos = 0; render(); break;
+      case 'w': {
+        const before = input.slice(0, cursorPos).replace(/\S+\s*$/, '');
+        input = before + input.slice(cursorPos);
+        cursorPos = before.length; render(); break;
+      }
+    }
+  }
+
+  // ── On-screen keyboard clicks ─────────────────
   document.addEventListener('click', e => {
     const t = e.target.closest('[data-char],[data-action]');
     if (!t || t === trackpoint) return;
-
     const ch  = t.dataset.char;
     const act = t.dataset.action;
 
     if (ch !== undefined) {
       if (/^[a-zA-Z]$/.test(ch)) {
-        if (ctrl) {
-          ctrl = false; btnCtrl.classList.remove('on');
-          const k = ch.toLowerCase();
-          if (k === 'c') {
-            log('^C', 'line-err'); input = ''; cursorPos = 0; render();
-          } else if (k === 'l') {
-            outputEl.innerHTML = '';
-          } else if (k === 'u') {
-            input = ''; cursorPos = 0; render();
-          } else if (k === 'w') {
-            const before = input.slice(0, cursorPos).replace(/\S+\s*$/, '');
-            input = before + input.slice(cursorPos);
-            cursorPos = before.length; render();
-          }
-          return;
-        }
+        if (ctrl) { handleCtrlKey(ch.toLowerCase()); return; }
         const out = shift ? ch.toUpperCase() : ch.toLowerCase();
         if (shift) { shift = false; btnShift.classList.remove('on'); }
         typeChar(out);
       } else {
-        // symbol / number: insert literally
         typeChar(ch);
       }
       return;
@@ -606,28 +605,25 @@
 
   // ── Physical keyboard ─────────────────────────
   document.addEventListener('keydown', e => {
-    if (e.key === 'Enter')       { e.preventDefault(); handleAction('enter'); return; }
-    if (e.key === 'Escape')      { handleAction('esc'); return; }
-    if (e.key === 'Backspace')   { handleAction('del'); return; }
-    if (e.key === 'Tab')         { e.preventDefault(); handleAction('tab'); return; }
-    if (e.key === 'ArrowLeft')   { handleArrow('left');  return; }
-    if (e.key === 'ArrowRight')  { handleArrow('right'); return; }
-    if (e.key === 'ArrowUp')     { e.preventDefault(); handleArrow('up');   return; }
-    if (e.key === 'ArrowDown')   { e.preventDefault(); handleArrow('down'); return; }
-    if (e.ctrlKey && e.key === 'c') { e.preventDefault(); log('^C','line-err'); input=''; cursorPos=0; render(); return; }
-    if (e.ctrlKey && e.key === 'l') { e.preventDefault(); outputEl.innerHTML=''; return; }
-    if (e.ctrlKey && e.key === 'u') { e.preventDefault(); input=''; cursorPos=0; render(); return; }
+    if (e.key === 'Enter')      { e.preventDefault(); handleAction('enter'); return; }
+    if (e.key === 'Escape')     { handleAction('esc'); return; }
+    if (e.key === 'Backspace')  { handleAction('del'); return; }
+    if (e.key === 'Tab')        { e.preventDefault(); handleAction('tab'); return; }
+    if (e.key === 'ArrowLeft')  { handleArrow('left');  return; }
+    if (e.key === 'ArrowRight') { handleArrow('right'); return; }
+    if (e.key === 'ArrowUp')    { e.preventDefault(); handleArrow('up');   return; }
+    if (e.key === 'ArrowDown')  { e.preventDefault(); handleArrow('down'); return; }
+    if (e.ctrlKey) {
+      const k = e.key.toLowerCase();
+      if (['c','l','u','w'].includes(k)) { e.preventDefault(); handleCtrlKey(k); return; }
+    }
     if (!e.ctrlKey && !e.metaKey && !e.altKey && e.key.length === 1) {
       typeChar(e.key);
     }
   });
 
-  // ── Trackpoint drag ───────────────────────────
-  /*
-    Pointer events with setPointerCapture — works for both mouse and touch.
-    Accumulated movement triggers arrow keys at STEP pixels per keypress.
-  */
-  const STEP = 6; // px per arrow key event
+  // ── Trackpoint ────────────────────────────────
+  const STEP = 6;
   let tpDown = false, tpLastX = 0, tpLastY = 0, tpAccX = 0, tpAccY = 0;
 
   trackpoint.addEventListener('pointerdown', e => {
@@ -638,28 +634,24 @@
     trackpoint.classList.add('dragging');
     e.preventDefault();
   });
-
   trackpoint.addEventListener('pointermove', e => {
     if (!tpDown) return;
-    const dx = e.clientX - tpLastX;
-    const dy = e.clientY - tpLastY;
+    const dx = e.clientX - tpLastX, dy = e.clientY - tpLastY;
     tpLastX = e.clientX; tpLastY = e.clientY;
     tpAccX += dx; tpAccY += dy;
-
-    while (tpAccX >= STEP)  { handleArrow('right'); tpAccX -= STEP; }
+    while (tpAccX >=  STEP) { handleArrow('right'); tpAccX -= STEP; }
     while (tpAccX <= -STEP) { handleArrow('left');  tpAccX += STEP; }
-    while (tpAccY >= STEP)  { handleArrow('down');  tpAccY -= STEP; }
+    while (tpAccY >=  STEP) { handleArrow('down');  tpAccY -= STEP; }
     while (tpAccY <= -STEP) { handleArrow('up');    tpAccY += STEP; }
-
     e.preventDefault();
   });
-
   trackpoint.addEventListener('pointerup',     () => { tpDown = false; trackpoint.classList.remove('dragging'); });
   trackpoint.addEventListener('pointercancel', () => { tpDown = false; trackpoint.classList.remove('dragging'); });
 
-  // ── Boot message ──────────────────────────────
-  log('termkeyboard v1.1', 'line-info');
-  log("type 'help' for commands — drag trackpoint for arrows", 'line-info');
+  // ── Boot ──────────────────────────────────────
+  appendOutput('termkeyboard v1.2', 'line-info');
+  appendOutput("type 'help' for commands", 'line-info');
+  newPrompt();
 </script>
 </body>
 </html>
