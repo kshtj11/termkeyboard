@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>termkeyboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 540px;
+      height: 620px;
+      overflow: hidden;
+      background: #0f0f0f;
+    }
+
+    #app {
+      width: 540px;
+      height: 620px;
+      display: flex;
+      flex-direction: column;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* ── TERMINAL ──────────────────────────── */
+    #terminal {
+      flex: 1 1 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      background: #0f0f0f;
+      padding: 10px 14px 8px;
+    }
+
+    #output {
+      flex: 1 1 0;
+      min-height: 0;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #2a2a2a transparent;
+    }
+    #output::-webkit-scrollbar { width: 3px; }
+    #output::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 2px; }
+
+    .line { font-size: 13px; line-height: 1.65; white-space: pre-wrap; word-break: break-all; }
+    .line-cmd { color: #eee; }
+    .line-cmd::before { content: '$ '; color: #4a4a4a; }
+    .line-out  { color: #888; padding-left: 14px; }
+    .line-err  { color: #e06c75; padding-left: 14px; }
+    .line-info { color: #61afef; padding-left: 14px; }
+
+    #input-line {
+      display: flex;
+      align-items: center;
+      padding-top: 6px;
+      border-top: 1px solid #1a1a1a;
+      margin-top: 4px;
+      flex-shrink: 0;
+    }
+    #prompt { color: #4a4a4a; font-size: 13px; margin-right: 2px; user-select: none; }
+    #input-display { flex: 1; font-size: 13px; color: #eee; font-family: inherit; }
+    #cursor {
+      display: inline-block;
+      width: 7px; height: 14px;
+      background: #bbb;
+      vertical-align: middle;
+      animation: blink 1s step-end infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+    /* ── KEYBOARD WRAPPER ──────────────────── */
+    #keyboard {
+      flex-shrink: 0;
+      background: #151515;
+      padding-top: 4px;
+      width: 540px;
+    }
+
+    /* ── ROW 0: TERMINAL SPECIAL KEYS ─────── */
+    #row-term {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      height: 59px;
+      padding: 0 8px;
+      background: #202020;
+      border: 1px solid #212121;
+      backdrop-filter: blur(11px);
+    }
+
+    .tkey {
+      height: 44px;
+      background: #3a3a3a;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ddd;
+      font-size: 16px;
+      cursor: pointer;
+      flex-shrink: 0;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .tkey:active, .tkey.on { background: #555; }
+    .tkey-esc  { width: 50px; }
+    .tkey-tab  { width: 44px; }
+    .tkey-ctrl { width: 54px; }
+    .tkey-s36  { width: 36px; }
+    .tkey-s38  { width: 38px; }
+
+    /* ── KEYBOARD BODY ─────────────────────── */
+    #kbd-body {
+      border: 1px solid #222;
+      padding-bottom: 12px;
+    }
+
+    #keys-layout {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 10px 0;
+    }
+
+    /* Standard alpha/num key (44×44) */
+    .key {
+      width: 44px;
+      height: 44px;
+      background: #3a3a3a;
+      border: 1px solid #3a3a3a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ddd;
+      font-size: 20px;
+      box-shadow: 0 1px 0 #222;
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      flex-shrink: 0;
+    }
+    .key:active { background: #555; }
+
+    /* Flex row of keys */
+    .row {
+      display: flex;
+      gap: 10px;
+      height: 44px;
+      align-items: center;
+      justify-content: center;
+    }
+    .row-pad { padding: 0 5px; }
+
+    /* Alpha/num visibility toggle */
+    .alpha-row   { display: flex; }
+    .num-row     { display: none; }
+    .alpha-shift { display: block; }
+    .num-shift   { display: none; }
+
+    body.num-mode .alpha-row   { display: none; }
+    body.num-mode .num-row     { display: flex; }
+    body.num-mode .alpha-shift { display: none; }
+    body.num-mode .num-shift   { display: block; }
+
+    /* Shift row: uses absolute children to keep left/right anchored */
+    .row-shift {
+      position: relative;
+      height: 44px;
+      width: 540px;
+    }
+    .key-shift {
+      position: absolute;
+      left: 12px; top: 0;
+      width: 64px; height: 44px;
+      background: #636363;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      color: #ddd;
+      box-shadow: 0 1px 0 #222;
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .key-shift:active, .key-shift.on { background: #888; }
+
+    .key-del {
+      position: absolute;
+      right: 12px; top: 0;
+      width: 64px; height: 44px;
+      background: #474747;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      color: #ddd;
+      box-shadow: 0 1px 0 #2a2a2a;
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .key-del:active { background: #666; }
+
+    /* ── BOTTOM ROW ────────────────────────── */
+    #row-bottom {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 0 8px;
+      height: 44px;
+    }
+
+    .bkey {
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: inherit;
+      color: #ddd;
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      flex-shrink: 0;
+    }
+    .bkey:active { filter: brightness(1.4); }
+
+    .bkey-kbd   { width: 52px; background: #3a3a3a; border-bottom: 1px solid #2a2a2a; }
+    .bkey-123   { width: 64px; background: #2d2d2d; font-size: 16px; font-weight: 700; box-shadow: 0 1.125px 0 #2a2a2a; }
+    .bkey-fn    { width: 40px; background: #2d2d2d; font-size: 18px; font-weight: 500; box-shadow: 0 1.125px 0 #2a2a2a; }
+    .bkey-comma { width: 40px; background: #2d2d2d; font-size: 18px; box-shadow: 0 1.125px 0 #2a2a2a; }
+    .bkey-space { flex: 1 1 0; min-width: 0; background: #474747; border: 1px solid #474747; font-size: 18px; box-shadow: 0 1px 0 #222; color: #666; }
+    .bkey-dot   { width: 44px; background: #2d2d2d; font-size: 18px; font-weight: 500; box-shadow: 0 1.125px 0 #2a2a2a; }
+    .bkey-done  { width: 70px; background: #636363; font-size: 20px; box-shadow: 0 1.125px 0 #2a2a2a; color: #eee; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ── TERMINAL ─────────────────────────── -->
+  <div id="terminal">
+    <div id="output"></div>
+    <div id="input-line">
+      <span id="prompt">$&nbsp;</span>
+      <span id="input-display"></span><span id="cursor"></span>
+    </div>
+  </div>
+
+  <!-- ── KEYBOARD ─────────────────────────── -->
+  <div id="keyboard">
+
+    <!-- Row 0: terminal utility keys -->
+    <div id="row-term">
+      <div class="tkey tkey-esc"  data-action="esc">esc</div>
+      <div class="tkey tkey-tab"  data-action="tab">tab</div>
+      <div class="tkey tkey-ctrl" data-action="ctrl" id="btn-ctrl">CTRL</div>
+      <div class="tkey tkey-s36"  data-char="|">|</div>
+      <div class="tkey tkey-s36"  data-char="~">~</div>
+      <div class="tkey tkey-s36"  data-char="/">/</div>
+      <div class="tkey tkey-s36"  data-char="-">-</div>
+      <div class="tkey tkey-s38"  data-char=":">:</div>
+      <div class="tkey tkey-s38"  data-char="*">*</div>
+      <div class="tkey tkey-s38"  data-char=">">&gt;</div>
+      <div class="tkey tkey-s38"  data-char="&amp;">&amp;</div>
+    </div>
+
+    <div id="kbd-body">
+      <div id="keys-layout">
+
+        <!-- Row 1 -->
+        <div class="row alpha-row">
+          <div class="key" data-char="q">Q</div>
+          <div class="key" data-char="w">W</div>
+          <div class="key" data-char="e">E</div>
+          <div class="key" data-char="r">R</div>
+          <div class="key" data-char="t">T</div>
+          <div class="key" data-char="y">Y</div>
+          <div class="key" data-char="u">U</div>
+          <div class="key" data-char="i">I</div>
+          <div class="key" data-char="o">O</div>
+          <div class="key" data-char="p">P</div>
+        </div>
+        <div class="row num-row">
+          <div class="key" data-char="1">1</div>
+          <div class="key" data-char="2">2</div>
+          <div class="key" data-char="3">3</div>
+          <div class="key" data-char="4">4</div>
+          <div class="key" data-char="5">5</div>
+          <div class="key" data-char="6">6</div>
+          <div class="key" data-char="7">7</div>
+          <div class="key" data-char="8">8</div>
+          <div class="key" data-char="9">9</div>
+          <div class="key" data-char="0">0</div>
+        </div>
+
+        <!-- Row 2 -->
+        <div class="row row-pad alpha-row">
+          <div class="key" data-char="a">A</div>
+          <div class="key" data-char="s">S</div>
+          <div class="key" data-char="d">D</div>
+          <div class="key" data-char="f">F</div>
+          <div class="key" data-char="g">G</div>
+          <div class="key" data-char="h">H</div>
+          <div class="key" data-char="j">J</div>
+          <div class="key" data-char="k">K</div>
+          <div class="key" data-char="l">L</div>
+        </div>
+        <div class="row row-pad num-row">
+          <div class="key" data-char="@">@</div>
+          <div class="key" data-char="#">#</div>
+          <div class="key" data-char="$">$</div>
+          <div class="key" data-char="%">%</div>
+          <div class="key" data-char="^">^</div>
+          <div class="key" data-char="(">(</div>
+          <div class="key" data-char=")">)</div>
+          <div class="key" data-char="[">[</div>
+          <div class="key" data-char="]">]</div>
+        </div>
+
+        <!-- Row 3: shift + ZXCVBNM + del (alpha) -->
+        <div class="row-shift alpha-shift">
+          <div class="key-shift" data-action="shift" id="btn-shift">⇧</div>
+          <div class="row" style="position:absolute;left:50%;transform:translateX(-50%);top:0;gap:10px;">
+            <div class="key" data-char="z">Z</div>
+            <div class="key" data-char="x">X</div>
+            <div class="key" data-char="c">C</div>
+            <div class="key" data-char="v">V</div>
+            <div class="key" data-char="b">B</div>
+            <div class="key" data-char="n">N</div>
+            <div class="key" data-char="m">M</div>
+          </div>
+          <div class="key-del" data-action="del">⌫</div>
+        </div>
+
+        <!-- Row 3: symbols + del (num) -->
+        <div class="row-shift num-shift">
+          <div class="key-shift" style="font-size:13px;" data-action="noop">#+&lt;</div>
+          <div class="row" style="position:absolute;left:50%;transform:translateX(-50%);top:0;gap:10px;">
+            <div class="key" data-char="!">!</div>
+            <div class="key" data-char="=">= </div>
+            <div class="key" data-char="+">&plus;</div>
+            <div class="key" data-char="{">{</div>
+            <div class="key" data-char="}">}</div>
+            <div class="key" data-char="\">\</div>
+            <div class="key" data-char="?">?</div>
+          </div>
+          <div class="key-del" data-action="del">⌫</div>
+        </div>
+
+      </div>
+
+      <!-- Bottom row -->
+      <div id="row-bottom">
+        <div class="bkey bkey-kbd">
+          <svg width="26" height="22" viewBox="0 0 26 22" fill="none">
+            <rect x="1" y="1" width="24" height="20" rx="3" stroke="#bbb" stroke-width="1.5"/>
+            <line x1="5" y1="7"  x2="21" y2="7"  stroke="#bbb" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="5" y1="12" x2="21" y2="12" stroke="#bbb" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="5" y1="17" x2="13" y2="17" stroke="#bbb" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="bkey bkey-123" id="btn-123" data-action="toggle-num">?123</div>
+        <div class="bkey bkey-fn"  data-action="fn">Fn</div>
+        <div class="bkey bkey-comma" data-char=",">,</div>
+        <div class="bkey bkey-space" data-char=" ">_</div>
+        <div class="bkey bkey-dot"  data-char=".">.</div>
+        <div class="bkey bkey-done" data-action="enter">Done</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const inputDisplay = document.getElementById('input-display');
+  const outputEl     = document.getElementById('output');
+  const btnShift     = document.getElementById('btn-shift');
+  const btnCtrl      = document.getElementById('btn-ctrl');
+  const btn123       = document.getElementById('btn-123');
+
+  let input   = '';
+  let shift   = false;
+  let ctrl    = false;
+  let numMode = false;
+
+  function render() {
+    inputDisplay.textContent = input;
+  }
+
+  function log(text, cls) {
+    const d = document.createElement('div');
+    d.className = 'line ' + cls;
+    d.textContent = text;
+    outputEl.appendChild(d);
+    outputEl.scrollTop = outputEl.scrollHeight;
+  }
+
+  function runCommand(cmd) {
+    if (!cmd.trim()) return;
+    log(cmd, 'line-cmd');
+    const parts = cmd.trim().split(/\s+/);
+    const base  = parts[0].toLowerCase();
+    const args  = parts.slice(1).join(' ');
+    switch (base) {
+      case 'clear': case 'cls': outputEl.innerHTML = ''; break;
+      case 'echo':  log(args || '', 'line-out'); break;
+      case 'help':
+        ['clear — clear screen', 'echo <text> — print text',
+         'date — current date', 'pwd — working dir',
+         'env — show env vars', 'CTRL+C — cancel  CTRL+L — clear  CTRL+U — clear line']
+        .forEach(l => log(l, 'line-info')); break;
+      case 'date': log(new Date().toString(), 'line-out'); break;
+      case 'pwd':  log('/home/user', 'line-out'); break;
+      case 'env':
+        ['TERM=termkeyboard', 'SHELL=/bin/bash', 'USER=user', 'HOME=/home/user']
+        .forEach(l => log(l, 'line-out')); break;
+      default: log('bash: ' + base + ': command not found', 'line-err');
+    }
+  }
+
+  // Unified click handler
+  document.addEventListener('click', e => {
+    const t = e.target.closest('[data-char],[data-action]');
+    if (!t) return;
+
+    const ch  = t.dataset.char;
+    const act = t.dataset.action;
+
+    if (ch !== undefined) {
+      // Alphabetic keys obey shift; everything else inserts literally
+      if (/^[a-zA-Z]$/.test(ch)) {
+        if (ctrl) {
+          ctrl = false;
+          btnCtrl.classList.remove('on');
+          const k = ch.toLowerCase();
+          if (k === 'c') { log('^C', 'line-err'); input = ''; render(); }
+          else if (k === 'l') { outputEl.innerHTML = ''; }
+          else if (k === 'u') { input = ''; render(); }
+          else if (k === 'w') {
+            input = input.replace(/\S+\s*$/, '');
+            render();
+          }
+          return;
+        }
+        const out = shift ? ch.toUpperCase() : ch.toLowerCase();
+        input += out;
+        if (shift) { shift = false; btnShift.classList.remove('on'); }
+      } else {
+        // Tkey special chars or numbers/symbols: insert literally
+        // For space (ch === ' ') this also works
+        input += ch;
+      }
+      render();
+      return;
+    }
+
+    switch (act) {
+      case 'shift':
+        shift = !shift;
+        btnShift.classList.toggle('on', shift);
+        break;
+      case 'del':
+        input = input.slice(0, -1);
+        render();
+        break;
+      case 'enter':
+        runCommand(input);
+        input = '';
+        render();
+        break;
+      case 'esc':
+        input = '';
+        shift = false;
+        btnShift.classList.remove('on');
+        render();
+        break;
+      case 'tab':
+        input += '  ';
+        render();
+        break;
+      case 'ctrl':
+        ctrl = !ctrl;
+        btnCtrl.classList.toggle('on', ctrl);
+        break;
+      case 'toggle-num':
+        numMode = !numMode;
+        document.body.classList.toggle('num-mode', numMode);
+        btn123.textContent = numMode ? 'ABC' : '?123';
+        break;
+      case 'fn':
+      case 'noop':
+        break;
+    }
+  });
+
+  // Welcome
+  log('termkeyboard v1.0', 'line-info');
+  log("type 'help' for available commands", 'line-info');
+</script>
+</body>
+</html>
