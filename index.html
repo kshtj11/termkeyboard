@@ -82,43 +82,62 @@
       width: 480px;
     }
 
-    /* ── ROW 0: TERMINAL SPECIAL KEYS ─────────── */
-    /*
-      11 keys scaled to 480px:
-      esc(44)+tab(38)+CTRL(48)+|(32)×4+:(34)×4 = 394px
-      10 gaps × 6px = 60px + 2×6px padding = 466px ≤ 480 ✓
-    */
+    /* ── ROW 0: TERMINAL SPECIAL KEYS (scrollable) ── */
     #row-term {
+      position: relative;
+      height: 60px;
+      background: #0b0b0b;
+      backdrop-filter: blur(11px);
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    #row-term-inner {
       display: flex;
       align-items: center;
-      gap: 6px;
-      height: 52px;
-      padding: 0 6px;
-      background: #202020;
-      border: 1px solid #212121;
-      backdrop-filter: blur(11px);
+      gap: 8px;
+      padding: 8px;
+      height: 100%;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    #row-term-inner::-webkit-scrollbar { display: none; }
+    .row-term-fade {
+      position: absolute;
+      top: 0; bottom: 0;
+      width: 36px;
+      pointer-events: none;
+    }
+    .row-term-fade-l {
+      left: 0;
+      background: linear-gradient(to right, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 100%);
+    }
+    .row-term-fade-r {
+      right: 0;
+      background: linear-gradient(to left, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 100%);
     }
 
     .tkey {
-      height: 38px;
+      height: 44px;
       background: #3a3a3a;
       border-radius: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
       color: #ddd;
-      font-size: 14px;
+      font-size: 16px;
       cursor: pointer;
       flex-shrink: 0;
       user-select: none;
       -webkit-tap-highlight-color: transparent;
+      padding: 0 10px;
     }
     .tkey:active, .tkey.on { background: #555; }
-    .tkey-esc  { width: 44px; }
-    .tkey-tab  { width: 38px; }
-    .tkey-ctrl { width: 48px; }
-    .tkey-s36  { width: 32px; }
-    .tkey-s38  { width: 34px; }
+    .tkey-tab  { width: 50px; }
+    .tkey-ctrl { width: 52px; }
+    .tkey-alt  { width: 44px; }
+    .tkey-sft  { width: 58px; }
+    .tkey-s36  { width: 36px; padding: 0 6px; }
+    .tkey-s38  { width: 38px; padding: 0 6px; }
 
     /* ── KEYBOARD BODY ─────────────────────────── */
     #kbd-body {
@@ -374,17 +393,22 @@
   <!-- ── KEYBOARD ──────────────────────────────────────── -->
   <div id="keyboard">
     <div id="row-term">
-      <div class="tkey tkey-esc"  data-action="esc">esc</div>
-      <div class="tkey tkey-tab"  data-action="tab">tab</div>
-      <div class="tkey tkey-ctrl" data-action="ctrl" id="btn-ctrl">CTRL</div>
-      <div class="tkey tkey-s36"  data-char="|">|</div>
-      <div class="tkey tkey-s36"  data-char="~">~</div>
-      <div class="tkey tkey-s36"  data-char="/">/</div>
-      <div class="tkey tkey-s36"  data-char="-">-</div>
-      <div class="tkey tkey-s38"  data-char=":">:</div>
-      <div class="tkey tkey-s38"  data-char="*">*</div>
-      <div class="tkey tkey-s38"  data-char=">">&gt;</div>
-      <div class="tkey tkey-s38"  data-char="&amp;">&amp;</div>
+      <div id="row-term-inner">
+        <div class="tkey tkey-tab"  data-action="tab">tab</div>
+        <div class="tkey tkey-ctrl" data-action="ctrl" id="btn-ctrl">ctrl</div>
+        <div class="tkey tkey-alt"  data-action="esc">alt</div>
+        <div class="tkey tkey-sft"  data-action="shift">shift</div>
+        <div class="tkey tkey-s36"  data-char="|">|</div>
+        <div class="tkey tkey-s36"  data-char="~">~</div>
+        <div class="tkey tkey-s36"  data-char="/">/</div>
+        <div class="tkey tkey-s36"  data-char="-">-</div>
+        <div class="tkey tkey-s38"  data-char=":">:</div>
+        <div class="tkey tkey-s38"  data-char="*">*</div>
+        <div class="tkey tkey-s38"  data-char=">">&gt;</div>
+        <div class="tkey tkey-s38"  data-char="&amp;">&amp;</div>
+      </div>
+      <div class="row-term-fade row-term-fade-l"></div>
+      <div class="row-term-fade row-term-fade-r"></div>
     </div>
 
     <div id="kbd-body">
