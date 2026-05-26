@@ -20,8 +20,8 @@
     }
 
     #app {
-      width: 540px;
-      height: 620px;
+      width: 480px;
+      height: 480px;
       flex-shrink: 0;
       display: flex;
       flex-direction: column;
@@ -79,66 +79,82 @@
       flex-shrink: 0;
       background: #151515;
       padding-top: 4px;
-      width: 540px;
+      width: 480px;
     }
 
     /* ── ROW 0: TERMINAL SPECIAL KEYS ─────────── */
+    /*
+      11 keys scaled to 480px:
+      esc(44)+tab(38)+CTRL(48)+|(32)×4+:(34)×4 = 394px
+      10 gaps × 6px = 60px + 2×6px padding = 466px ≤ 480 ✓
+    */
     #row-term {
       display: flex;
       align-items: center;
-      gap: 8px;
-      height: 59px;
-      padding: 0 8px;
+      gap: 6px;
+      height: 52px;
+      padding: 0 6px;
       background: #202020;
       border: 1px solid #212121;
       backdrop-filter: blur(11px);
     }
 
     .tkey {
-      height: 44px;
+      height: 38px;
       background: #3a3a3a;
       border-radius: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
       color: #ddd;
-      font-size: 16px;
+      font-size: 14px;
       cursor: pointer;
       flex-shrink: 0;
       user-select: none;
       -webkit-tap-highlight-color: transparent;
     }
     .tkey:active, .tkey.on { background: #555; }
-    .tkey-esc  { width: 50px; }
-    .tkey-tab  { width: 44px; }
-    .tkey-ctrl { width: 54px; }
-    .tkey-s36  { width: 36px; }
-    .tkey-s38  { width: 38px; }
+    .tkey-esc  { width: 44px; }
+    .tkey-tab  { width: 38px; }
+    .tkey-ctrl { width: 48px; }
+    .tkey-s36  { width: 32px; }
+    .tkey-s38  { width: 34px; }
 
     /* ── KEYBOARD BODY ─────────────────────────── */
     #kbd-body {
       border: 1px solid #222;
-      padding-bottom: 12px;
+      padding-bottom: 10px;
     }
 
+    /*
+      Key grid for 480px:
+      QWERTY:    10×38 + 9×8  = 452px centred in 480 ✓
+      ASDFGHJKL: 9×38  + 8×8  = 406px + 8px pad = 414px ✓
+      ZXCVBNM:   7×38  + 6×8  = 314px centred in 480 ✓
+
+      Trackpoint between G/H and V/B:
+        G right=259, H left=267 → x-centre=263 → left=263-17=246
+        Row2 bottom=92, Row3 top=100 → y-centre=96 → top=96-17=79
+    */
     #keys-layout {
       position: relative;
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      padding: 10px 0;
+      gap: 8px;
+      padding: 8px 0;
+      width: 480px;
     }
 
     .key {
-      width: 44px;
-      height: 44px;
+      width: 38px;
+      height: 38px;
       background: #3a3a3a;
       border: 1px solid #3a3a3a;
       display: flex;
       align-items: center;
       justify-content: center;
       color: #ddd;
-      font-size: 20px;
+      font-size: 18px;
       box-shadow: 0 1px 0 #222;
       cursor: pointer;
       user-select: none;
@@ -149,12 +165,12 @@
 
     .row {
       display: flex;
-      gap: 10px;
-      height: 44px;
+      gap: 8px;
+      height: 38px;
       align-items: center;
       justify-content: center;
     }
-    .row-pad { padding: 0 5px; }
+    .row-pad { padding: 0 4px; }
 
     .alpha-row   { display: flex; }
     .num-row     { display: none; }
@@ -167,18 +183,18 @@
 
     .row-shift {
       position: relative;
-      height: 44px;
-      width: 540px;
+      height: 38px;
+      width: 480px;
     }
     .key-shift {
       position: absolute;
-      left: 12px; top: 0;
-      width: 64px; height: 44px;
+      left: 10px; top: 0;
+      width: 58px; height: 38px;
       background: #636363;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 22px; color: #ddd;
+      font-size: 20px; color: #ddd;
       box-shadow: 0 1px 0 #222;
       cursor: pointer;
       user-select: none;
@@ -188,13 +204,13 @@
 
     .key-del {
       position: absolute;
-      right: 12px; top: 0;
-      width: 64px; height: 44px;
+      right: 10px; top: 0;
+      width: 58px; height: 38px;
       background: #474747;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 22px; color: #ddd;
+      font-size: 20px; color: #ddd;
       box-shadow: 0 1px 0 #2a2a2a;
       cursor: pointer;
       user-select: none;
@@ -205,7 +221,7 @@
     /* ── TRACKPOINT ────────────────────────────── */
     #trackpoint {
       position: absolute;
-      top: 96px; left: 280px;
+      top: 79px; left: 246px;
       width: 34px; height: 34px;
       border-radius: 8px;
       background: #181818;
@@ -233,13 +249,13 @@
     /* ── BOTTOM ROW ────────────────────────────── */
     #row-bottom {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       align-items: center;
-      padding: 0 8px;
-      height: 44px;
+      padding: 0 6px;
+      height: 40px;
     }
     .bkey {
-      height: 44px;
+      height: 40px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -251,13 +267,13 @@
       flex-shrink: 0;
     }
     .bkey:active { filter: brightness(1.4); }
-    .bkey-kbd   { width: 52px; background: #3a3a3a; border-bottom: 1px solid #2a2a2a; }
-    .bkey-123   { width: 64px; background: #2d2d2d; font-size: 16px; font-weight: 700; box-shadow: 0 1.125px 0 #2a2a2a; }
-    .bkey-fn    { width: 40px; background: #2d2d2d; font-size: 18px; font-weight: 500; box-shadow: 0 1.125px 0 #2a2a2a; }
-    .bkey-comma { width: 40px; background: #2d2d2d; font-size: 18px; box-shadow: 0 1.125px 0 #2a2a2a; }
-    .bkey-space { flex: 1 1 0; min-width: 0; background: #474747; border: 1px solid #474747; font-size: 18px; box-shadow: 0 1px 0 #222; color: #555; }
-    .bkey-dot   { width: 44px; background: #2d2d2d; font-size: 18px; font-weight: 500; box-shadow: 0 1.125px 0 #2a2a2a; }
-    .bkey-done  { width: 70px; background: #636363; font-size: 20px; box-shadow: 0 1.125px 0 #2a2a2a; color: #eee; }
+    .bkey-kbd   { width: 46px; background: #3a3a3a; border-bottom: 1px solid #2a2a2a; }
+    .bkey-123   { width: 56px; background: #2d2d2d; font-size: 14px; font-weight: 700; box-shadow: 0 1.125px 0 #2a2a2a; }
+    .bkey-fn    { width: 34px; background: #2d2d2d; font-size: 16px; font-weight: 500; box-shadow: 0 1.125px 0 #2a2a2a; }
+    .bkey-comma { width: 34px; background: #2d2d2d; font-size: 16px; box-shadow: 0 1.125px 0 #2a2a2a; }
+    .bkey-space { flex: 1 1 0; min-width: 0; background: #474747; border: 1px solid #474747; font-size: 16px; box-shadow: 0 1px 0 #222; color: #555; }
+    .bkey-dot   { width: 38px; background: #2d2d2d; font-size: 16px; font-weight: 500; box-shadow: 0 1.125px 0 #2a2a2a; }
+    .bkey-done  { width: 62px; background: #636363; font-size: 18px; box-shadow: 0 1.125px 0 #2a2a2a; color: #eee; }
   </style>
 </head>
 <body>
