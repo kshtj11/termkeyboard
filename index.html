@@ -762,11 +762,11 @@
 
   // ── v2: spacebar drag pad ─────────────────────
   const SP_STEP = 7;
-  let spDown = false, spLastX = 0, spLastY = 0, spAccX = 0, spAccY = 0;
+  let spDown = false, spMoved = false, spLastX = 0, spLastY = 0, spAccX = 0, spAccY = 0;
 
   spaceBtn.addEventListener('pointerdown', e => {
     if (variant !== 2) return;
-    spDown = true;
+    spDown = true; spMoved = false;
     spLastX = e.clientX; spLastY = e.clientY;
     spAccX = 0; spAccY = 0;
     spaceBtn.setPointerCapture(e.pointerId);
@@ -779,14 +779,15 @@
     const dx = e.clientX - spLastX, dy = e.clientY - spLastY;
     spLastX = e.clientX; spLastY = e.clientY;
     spAccX += dx; spAccY += dy;
-    while (spAccX >=  SP_STEP) { handleArrow('right'); spAccX -= SP_STEP; }
-    while (spAccX <= -SP_STEP) { handleArrow('left');  spAccX += SP_STEP; }
-    while (spAccY >=  SP_STEP) { handleArrow('down');  spAccY -= SP_STEP; }
-    while (spAccY <= -SP_STEP) { handleArrow('up');    spAccY += SP_STEP; }
+    while (spAccX >=  SP_STEP) { handleArrow('right'); spAccX -= SP_STEP; spMoved = true; }
+    while (spAccX <= -SP_STEP) { handleArrow('left');  spAccX += SP_STEP; spMoved = true; }
+    while (spAccY >=  SP_STEP) { handleArrow('down');  spAccY -= SP_STEP; spMoved = true; }
+    while (spAccY <= -SP_STEP) { handleArrow('up');    spAccY += SP_STEP; spMoved = true; }
     e.preventDefault();
   });
 
   function spStop() {
+    if (spDown && !spMoved) typeChar(' '); // clean tap → type space
     spDown = false;
     spaceBtn.style.cursor = '';
   }
