@@ -245,6 +245,12 @@
       transition: transform 0.06s ease;
     }
     #trackpoint.dragging #tp-nub { transform: scale(0.88); }
+    /* Extend hit area without changing the visual */
+    #trackpoint::before {
+      content: '';
+      position: absolute;
+      inset: -12px;
+    }
 
     /* ── BOTTOM ROW ────────────────────────────── */
     #row-bottom {
@@ -278,20 +284,18 @@
     /* ── RADIAL TRACKPOINT OVERLAY ────────────────── */
     #tp-radial {
       position: fixed;
-      width: 120px; height: 120px;
+      width: 80px; height: 80px;
       border-radius: 50%;
       background: rgba(20,20,20,0.92);
       z-index: 300;
-      transform: translate(-50%,-50%) scale(0.72);
+      transform: translate(-50%,-50%);
       pointer-events: none;
       overflow: hidden;
-      box-shadow: 0 2px 24px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.07);
+      box-shadow: 0 2px 14px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.07);
       opacity: 0;
-      transition: opacity 0.12s ease, transform 0.12s ease;
     }
     #tp-radial.visible {
       opacity: 1;
-      transform: translate(-50%,-50%) scale(1);
     }
     .tp-sec {
       position: absolute;
@@ -312,10 +316,10 @@
       pointer-events: none;
     }
     .tp-arr.active { color: #fff; }
-    .tp-arr-up    { top: 9px;    left: 50%; transform: translateX(-50%); }
-    .tp-arr-right { right: 9px;  top: 50%;  transform: translateY(-50%); }
-    .tp-arr-down  { bottom: 9px; left: 50%; transform: translateX(-50%); }
-    .tp-arr-left  { left: 9px;   top: 50%;  transform: translateY(-50%); }
+    .tp-arr-up    { top: 5px;    left: 50%; transform: translateX(-50%); }
+    .tp-arr-right { right: 5px;  top: 50%;  transform: translateY(-50%); }
+    .tp-arr-down  { bottom: 5px; left: 50%; transform: translateX(-50%); }
+    .tp-arr-left  { left: 5px;   top: 50%;  transform: translateY(-50%); }
   </style>
 </head>
 <body>
