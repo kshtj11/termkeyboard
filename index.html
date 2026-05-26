@@ -274,6 +274,48 @@
     .bkey-space { flex: 1 1 0; min-width: 0; background: #474747; border: 1px solid #474747; font-size: 16px; box-shadow: 0 1px 0 #222; color: #555; }
     .bkey-dot   { width: 38px; background: #2d2d2d; font-size: 16px; font-weight: 500; box-shadow: 0 1.125px 0 #2a2a2a; }
     .bkey-done  { width: 62px; background: #636363; font-size: 18px; box-shadow: 0 1.125px 0 #2a2a2a; color: #eee; }
+
+    /* ── RADIAL TRACKPOINT OVERLAY ────────────────── */
+    #tp-radial {
+      position: fixed;
+      width: 120px; height: 120px;
+      border-radius: 50%;
+      background: rgba(20,20,20,0.92);
+      z-index: 300;
+      transform: translate(-50%,-50%) scale(0.72);
+      pointer-events: none;
+      overflow: hidden;
+      box-shadow: 0 2px 24px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.07);
+      opacity: 0;
+      transition: opacity 0.12s ease, transform 0.12s ease;
+    }
+    #tp-radial.visible {
+      opacity: 1;
+      transform: translate(-50%,-50%) scale(1);
+    }
+    .tp-sec {
+      position: absolute;
+      inset: 0;
+      transition: background 0.08s;
+    }
+    #sec-up    { clip-path: polygon(0% 0%, 100% 0%, 50% 50%); }
+    #sec-right { clip-path: polygon(100% 0%, 100% 100%, 50% 50%); }
+    #sec-down  { clip-path: polygon(100% 100%, 0% 100%, 50% 50%); }
+    #sec-left  { clip-path: polygon(0% 100%, 0% 0%, 50% 50%); }
+    .tp-sec.active { background: rgba(255,255,255,0.14); }
+    .tp-arr {
+      position: absolute;
+      color: rgba(200,200,200,0.45);
+      font-size: 15px;
+      line-height: 1;
+      transition: color 0.08s;
+      pointer-events: none;
+    }
+    .tp-arr.active { color: #fff; }
+    .tp-arr-up    { top: 9px;    left: 50%; transform: translateX(-50%); }
+    .tp-arr-right { right: 9px;  top: 50%;  transform: translateY(-50%); }
+    .tp-arr-down  { bottom: 9px; left: 50%; transform: translateX(-50%); }
+    .tp-arr-left  { left: 9px;   top: 50%;  transform: translateY(-50%); }
   </style>
 </head>
 <body>
@@ -375,6 +417,22 @@
       </div>
     </div>
   </div>
+</div>
+
+<!-- Radial trackpoint overlay — lives outside #app so fixed positioning is viewport-relative -->
+<div id="tp-radial">
+  <div class="tp-sec" id="sec-up"></div>
+  <div class="tp-sec" id="sec-right"></div>
+  <div class="tp-sec" id="sec-down"></div>
+  <div class="tp-sec" id="sec-left"></div>
+  <svg viewBox="0 0 120 120" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;">
+    <line x1="0" y1="0"   x2="120" y2="120" stroke="rgba(255,255,255,0.11)" stroke-width="1.5"/>
+    <line x1="120" y1="0" x2="0"   y2="120" stroke="rgba(255,255,255,0.11)" stroke-width="1.5"/>
+  </svg>
+  <div class="tp-arr tp-arr-up">↑</div>
+  <div class="tp-arr tp-arr-right">→</div>
+  <div class="tp-arr tp-arr-down">↓</div>
+  <div class="tp-arr tp-arr-left">←</div>
 </div>
 
 <script>
@@ -638,31 +696,100 @@
     }
   });
 
-  // ── Trackpoint ────────────────────────────────
-  const STEP = 6;
-  let tpDown = false, tpLastX = 0, tpLastY = 0, tpAccX = 0, tpAccY = 0;
+  // ── Trackpoint — radial pie-menu ─────────────
+  const radial  = document.getElementById('tp-radial');
+  const secEls  = {
+    up:    document.getElementById('sec-up'),
+    right: document.getElementById('sec-right'),
+    down:  document.getElementById('sec-down'),
+    left:  document.getElementById('sec-left'),
+  };
+  const arrEls  = {
+    up:    document.querySelector('.tp-arr-up'),
+    right: document.querySelector('.tp-arr-right'),
+    down:  document.querySelector('.tp-arr-down'),
+    left:  document.querySelector('.tp-arr-left'),
+  };
+
+  const DEAD_ZONE   = 18;   // px from centre before direction locks
+  const FIRST_DELAY = 320;  // ms before auto-repeat starts
+  const REPEAT_MS   = 75;   // ms between repeats
+
+  let tpDown      = false;
+  let tpCX        = 0, tpCY = 0;   // fixed centre of trackpoint in viewport px
+  let tpCurDir    = null;
+  let tpRepeatTmr = null;
+  let tpRepeatInt = null;
+
+  function tpClearRepeat() {
+    clearTimeout(tpRepeatTmr);
+    clearInterval(tpRepeatInt);
+    tpRepeatTmr = tpRepeatInt = null;
+  }
+
+  function tpActivate(dir) {
+    if (dir === tpCurDir) return;
+    // Deactivate previous
+    if (tpCurDir) {
+      secEls[tpCurDir].classList.remove('active');
+      arrEls[tpCurDir].classList.remove('active');
+      tpClearRepeat();
+    }
+    tpCurDir = dir;
+    if (!dir) return;
+    // Activate new
+    secEls[dir].classList.add('active');
+    arrEls[dir].classList.add('active');
+    handleArrow(dir);
+    tpRepeatTmr = setTimeout(() => {
+      tpRepeatInt = setInterval(() => handleArrow(dir), REPEAT_MS);
+    }, FIRST_DELAY);
+  }
+
+  function tpAngleToDir(dx, dy) {
+    const a = Math.atan2(dy, dx); // -π … +π, 0 = right
+    if (a > -Math.PI / 4 && a <= Math.PI / 4)       return 'right';
+    if (a >  Math.PI / 4 && a <= 3 * Math.PI / 4)   return 'down';
+    if (a > -3 * Math.PI / 4 && a <= -Math.PI / 4)  return 'up';
+    return 'left';
+  }
+
+  function tpStop() {
+    tpDown = false;
+    tpActivate(null);
+    tpCurDir = null;
+    tpClearRepeat();
+    radial.classList.remove('visible');
+    trackpoint.classList.remove('dragging');
+  }
 
   trackpoint.addEventListener('pointerdown', e => {
     tpDown = true;
-    tpLastX = e.clientX; tpLastY = e.clientY;
-    tpAccX = 0; tpAccY = 0;
+    const r = trackpoint.getBoundingClientRect();
+    tpCX = r.left + r.width  / 2;
+    tpCY = r.top  + r.height / 2;
+    radial.style.left = tpCX + 'px';
+    radial.style.top  = tpCY + 'px';
+    radial.classList.add('visible');
     trackpoint.setPointerCapture(e.pointerId);
     trackpoint.classList.add('dragging');
     e.preventDefault();
   });
+
   trackpoint.addEventListener('pointermove', e => {
     if (!tpDown) return;
-    const dx = e.clientX - tpLastX, dy = e.clientY - tpLastY;
-    tpLastX = e.clientX; tpLastY = e.clientY;
-    tpAccX += dx; tpAccY += dy;
-    while (tpAccX >=  STEP) { handleArrow('right'); tpAccX -= STEP; }
-    while (tpAccX <= -STEP) { handleArrow('left');  tpAccX += STEP; }
-    while (tpAccY >=  STEP) { handleArrow('down');  tpAccY -= STEP; }
-    while (tpAccY <= -STEP) { handleArrow('up');    tpAccY += STEP; }
+    const dx = e.clientX - tpCX;
+    const dy = e.clientY - tpCY;
+    if (Math.hypot(dx, dy) < DEAD_ZONE) {
+      tpActivate(null);
+    } else {
+      tpActivate(tpAngleToDir(dx, dy));
+    }
     e.preventDefault();
   });
-  trackpoint.addEventListener('pointerup',     () => { tpDown = false; trackpoint.classList.remove('dragging'); });
-  trackpoint.addEventListener('pointercancel', () => { tpDown = false; trackpoint.classList.remove('dragging'); });
+
+  trackpoint.addEventListener('pointerup',     tpStop);
+  trackpoint.addEventListener('pointercancel', tpStop);
 
   // ── Boot ──────────────────────────────────────
   appendOutput('termkeyboard v1.2', 'line-info');
