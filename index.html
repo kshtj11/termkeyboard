@@ -334,6 +334,21 @@
     /* kbd-body + terminal become a giant trackpad; touch-action off so pointer events fire cleanly */
     body.v3 #terminal { touch-action: none; }
     body.v3 #kbd-body  { touch-action: none; }
+    /* Keys: hide labels, flatten — becomes a pure trackpad surface */
+    body.v3 .key {
+      color: transparent;
+      background: #232323;
+      border-color: #232323;
+      box-shadow: none;
+    }
+    body.v3 .key-shift { color: transparent; background: #303030; }
+    body.v3 .key-del   { color: transparent; background: #282828; }
+    body.v3 .bkey      { color: transparent; }
+    body.v3 .bkey-kbd svg { visibility: hidden; }
+    /* Close up gaps */
+    body.v3 #keys-layout { gap: 5px; }
+    body.v3 .row         { gap: 5px; }
+    body.v3 #row-bottom  { gap: 4px; }
     body.v2 .bkey-space {
       align-items: flex-end;
       padding-bottom: 5px;
@@ -960,9 +975,11 @@
     const r = trackpoint.getBoundingClientRect();
     tpCX = r.left + r.width  / 2;
     tpCY = r.top  + r.height / 2;
-    radial.style.left = tpCX + 'px';
-    radial.style.top  = tpCY + 'px';
-    radial.classList.add('visible');
+    if (variant !== 3) {
+      radial.style.left = tpCX + 'px';
+      radial.style.top  = tpCY + 'px';
+      radial.classList.add('visible');
+    }
     trackpoint.setPointerCapture(e.pointerId);
     trackpoint.classList.add('dragging');
     e.preventDefault();
