@@ -24,6 +24,9 @@ body
 │     │ ├ .row-shift.alpha-shift  ⇧ ZXCVBNM ⌫ (absolute children)
 │     │ ├ .row-shift.num-shift    symbols + ⌫
 │     │ └ #trackpoint           abs-positioned, lives at GHVB intersection
+│     │   ├ .v3-sec × 4          joystick sectors (clip-path triangles, hidden unless v3 drag)
+│     │   ├ svg.v3-dividers      diagonal lines between sectors
+│     │   └ #tp-nub              draggable nub (transform:translate in v3)
 │     └ #row-bottom             kbd-icon, ?123, Fn, ',', space, '.', Done
 └ #tp-radial                 outside #app, position:fixed pie menu (4 sectors + arrows)
 ```
@@ -87,7 +90,7 @@ When adding a new modifier button: give it `data-action="X"`, an `id="btn-X-top"
 | | v1 | v2 | v3 |
 |---|---|---|---|
 | body class | — | `v2` | `v3` |
-| trackpoint | radial pie menu on hold | hidden (`display:none`) | visible; radial suppressed; pointerdown adds `v3-dragging` |
+| trackpoint | radial pie menu on hold | hidden (`display:none`) | joystick: 34px→80px circle on drag, nub tracks finger (clamped 30px), 4 sectors highlight active dir, auto-repeat; `v3-dragging` dims keys |
 | spacebar | types `' '` | tap=space, drag=arrows; adds `v2-dragging` | types `' '` |
 | keyboard fade | — | `v2-dragging` dims keys, spacebar stays lit | `v3-dragging` dims keys |
 

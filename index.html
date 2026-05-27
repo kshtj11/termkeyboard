@@ -351,6 +351,35 @@
     body.v3-dragging .key-del   { color: rgba(221,221,221,0.18); background: #292929; }
     body.v3-dragging .bkey      { color: rgba(221,221,221,0.15); }
     body.v3-dragging .bkey-kbd svg { opacity: 0.15; }
+    /* V3 joystick: trackpoint expands to 80px circle on drag */
+    .v3-sec {
+      display: none;
+      position: absolute;
+      inset: 0;
+      transition: background 0.08s;
+    }
+    .v3-dividers { display: none; position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+    #v3-sec-up    { clip-path: polygon(0% 0%, 100% 0%, 50% 50%); }
+    #v3-sec-right { clip-path: polygon(100% 0%, 100% 100%, 50% 50%); }
+    #v3-sec-down  { clip-path: polygon(100% 100%, 0% 100%, 50% 50%); }
+    #v3-sec-left  { clip-path: polygon(0% 100%, 0% 0%, 50% 50%); }
+    .v3-sec.active { background: rgba(255,255,255,0.14); }
+    body.v3 #trackpoint {
+      transition: width 0.1s ease, height 0.1s ease, top 0.1s ease, left 0.1s ease, border-radius 0.1s ease;
+    }
+    body.v3 #trackpoint.dragging {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      top: 56px; left: 223px;
+      overflow: hidden;
+      border: 1.5px solid #555;
+      background: #1a1a1a;
+      box-shadow: 0 2px 14px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05);
+    }
+    body.v3 #trackpoint.dragging .v3-sec { display: block; }
+    body.v3 #trackpoint.dragging .v3-dividers { display: block; }
+    body.v3 #trackpoint.dragging #tp-nub { z-index: 2; position: relative; }
+    body.v3 #tp-nub { transition: none; }
     body.v2 .bkey-space {
       align-items: flex-end;
       padding-bottom: 5px;
@@ -507,7 +536,14 @@
           <div class="key-del" data-action="del">⌫</div>
         </div>
 
-        <div id="trackpoint"><div id="tp-nub"></div></div>
+        <div id="trackpoint">
+          <div class="v3-sec" id="v3-sec-up"></div>
+          <div class="v3-sec" id="v3-sec-right"></div>
+          <div class="v3-sec" id="v3-sec-down"></div>
+          <div class="v3-sec" id="v3-sec-left"></div>
+          <svg class="v3-dividers" viewBox="0 0 80 80"><line x1="0" y1="0" x2="80" y2="80" stroke="rgba(255,255,255,0.11)" stroke-width="1"/><line x1="80" y1="0" x2="0" y2="80" stroke="rgba(255,255,255,0.11)" stroke-width="1"/></svg>
+          <div id="tp-nub"></div>
+        </div>
 
       </div>
 
@@ -1019,6 +1055,13 @@
     down:  document.querySelector('.tp-arr-down'),
     left:  document.querySelector('.tp-arr-left'),
   };
+  const v3SecEls = {
+    up:    document.getElementById('v3-sec-up'),
+    right: document.getElementById('v3-sec-right'),
+    down:  document.getElementById('v3-sec-down'),
+    left:  document.getElementById('v3-sec-left'),
+  };
+  const tpNub = document.getElementById('tp-nub');
 
   const DEAD_ZONE   = 18;   // px from centre before direction locks
   const FIRST_DELAY = 320;  // ms before auto-repeat starts
@@ -1040,15 +1083,23 @@
     if (dir === tpCurDir) return;
     // Deactivate previous
     if (tpCurDir) {
-      secEls[tpCurDir].classList.remove('active');
-      arrEls[tpCurDir].classList.remove('active');
+      if (variant === 3) {
+        v3SecEls[tpCurDir].classList.remove('active');
+      } else {
+        secEls[tpCurDir].classList.remove('active');
+        arrEls[tpCurDir].classList.remove('active');
+      }
       tpClearRepeat();
     }
     tpCurDir = dir;
     if (!dir) return;
     // Activate new
-    secEls[dir].classList.add('active');
-    arrEls[dir].classList.add('active');
+    if (variant === 3) {
+      v3SecEls[dir].classList.add('active');
+    } else {
+      secEls[dir].classList.add('active');
+      arrEls[dir].classList.add('active');
+    }
     handleArrow(dir);
     tpRepeatTmr = setTimeout(() => {
       tpRepeatInt = setInterval(() => handleArrow(dir), REPEAT_MS);
@@ -1070,7 +1121,8 @@
     tpClearRepeat();
     radial.classList.remove('visible');
     trackpoint.classList.remove('dragging');
-    document.body.classList.remove('v3-dragging'); // restore keyboard in v3
+    document.body.classList.remove('v3-dragging');
+    tpNub.style.transform = ''; // reset nub to centre
   }
 
   trackpoint.addEventListener('pointerdown', e => {
@@ -1094,6 +1146,14 @@
     if (!tpDown) return;
     const dx = e.clientX - tpCX;
     const dy = e.clientY - tpCY;
+    // V3: move nub inside the joystick circle
+    if (variant === 3) {
+      const dist = Math.hypot(dx, dy);
+      const maxR = 30; // max nub travel from centre
+      const clamp = Math.min(dist, maxR);
+      const angle = Math.atan2(dy, dx);
+      tpNub.style.transform = `translate(${clamp * Math.cos(angle)}px, ${clamp * Math.sin(angle)}px)`;
+    }
     if (Math.hypot(dx, dy) < DEAD_ZONE) {
       tpActivate(null);
     } else {
