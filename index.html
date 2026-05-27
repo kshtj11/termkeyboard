@@ -879,38 +879,9 @@
   let v3Down = false, v3DidDrag = false;
   let v3LastX = 0, v3LastY = 0, v3AccX = 0, v3AccY = 0;
 
-  appEl.addEventListener('pointerdown', e => {
-    if (variant !== 3) return;
-    // Exclude: modifier bar, trackpoint, variant toggle
-    if (e.target.closest('#row-term') ||
-        e.target.closest('#trackpoint') ||
-        e.target.closest('#variant-toggle')) return;
-    v3Down = true; v3DidDrag = false;
-    v3LastX = e.clientX; v3LastY = e.clientY;
-    v3AccX = 0; v3AccY = 0;
-  }, { capture: true });
-
-  appEl.addEventListener('pointermove', e => {
-    if (!v3Down || variant !== 3) return;
-    const dx = e.clientX - v3LastX, dy = e.clientY - v3LastY;
-    v3LastX = e.clientX; v3LastY = e.clientY;
-    v3AccX += dx; v3AccY += dy;
-    // Dim keyboard as soon as finger moves a little
-    if (Math.abs(v3AccX) > 3 || Math.abs(v3AccY) > 3) {
-      document.body.classList.add('v3-dragging');
-    }
-    while (v3AccX >=  V3_STEP) { handleArrow('right'); v3AccX -= V3_STEP; v3DidDrag = true; }
-    while (v3AccX <= -V3_STEP) { handleArrow('left');  v3AccX += V3_STEP; v3DidDrag = true; }
-    while (v3AccY >=  V3_STEP) { handleArrow('down');  v3AccY -= V3_STEP; v3DidDrag = true; }
-    while (v3AccY <= -V3_STEP) { handleArrow('up');    v3AccY += V3_STEP; v3DidDrag = true; }
-  }, { capture: true });
-
-  function v3Stop() {
-    v3Down = false;
-    document.body.classList.remove('v3-dragging');
-  }
-  appEl.addEventListener('pointerup',     () => { v3Stop(); }, { capture: true });
-  appEl.addEventListener('pointercancel', () => { v3Stop(); v3DidDrag = false; }, { capture: true });
+  // v3 cursor mode is initiated exclusively from the trackpoint.
+  // setPointerCapture on the trackpoint means the drag naturally
+  // follows the finger across the whole keyboard — no appEl handler needed.
 
   // ── Trackpoint — radial pie-menu ─────────────
   const radial  = document.getElementById('tp-radial');
@@ -977,6 +948,7 @@
     tpClearRepeat();
     radial.classList.remove('visible');
     trackpoint.classList.remove('dragging');
+    document.body.classList.remove('v3-dragging'); // restore keyboard in v3
   }
 
   trackpoint.addEventListener('pointerdown', e => {
@@ -988,6 +960,8 @@
       radial.style.left = tpCX + 'px';
       radial.style.top  = tpCY + 'px';
       radial.classList.add('visible');
+    } else {
+      document.body.classList.add('v3-dragging'); // dim keyboard immediately on trackpoint touch
     }
     trackpoint.setPointerCapture(e.pointerId);
     trackpoint.classList.add('dragging');
