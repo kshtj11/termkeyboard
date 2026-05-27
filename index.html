@@ -360,6 +360,23 @@
       touch-action: none;
     }
     body.v2 .bkey-space:active { filter: none; }
+    /* Animate keys when spacebar drag begins */
+    body.v2 .key,
+    body.v2 .key-shift,
+    body.v2 .key-del,
+    body.v2 .bkey { transition: color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease; }
+    /* While dragging: dim all keys, keep spacebar lit as the active control */
+    body.v2-dragging .key {
+      color: rgba(221,221,221,0.18);
+      background: #232323;
+      border-color: #232323;
+      box-shadow: none;
+    }
+    body.v2-dragging .key-shift { color: rgba(221,221,221,0.18); background: #2f2f2f; }
+    body.v2-dragging .key-del   { color: rgba(221,221,221,0.18); background: #292929; }
+    body.v2-dragging .bkey:not(.bkey-space) { color: rgba(221,221,221,0.15); }
+    body.v2-dragging .bkey-kbd svg { opacity: 0.15; }
+    body.v2-dragging .bkey-space { background: #555; color: #888; cursor: grabbing; }
 
     /* ── RADIAL TRACKPOINT OVERLAY ────────────────── */
     #tp-radial {
@@ -956,6 +973,9 @@
     const dx = e.clientX - spLastX, dy = e.clientY - spLastY;
     spLastX = e.clientX; spLastY = e.clientY;
     spAccX += dx; spAccY += dy;
+    if (Math.abs(spAccX) > 3 || Math.abs(spAccY) > 3) {
+      document.body.classList.add('v2-dragging');
+    }
     while (spAccX >=  SP_STEP) { handleArrow('right'); spAccX -= SP_STEP; spMoved = true; }
     while (spAccX <= -SP_STEP) { handleArrow('left');  spAccX += SP_STEP; spMoved = true; }
     while (spAccY >=  SP_STEP) { handleArrow('down');  spAccY -= SP_STEP; spMoved = true; }
@@ -966,6 +986,7 @@
   function spStop() {
     if (spDown && !spMoved) typeChar(' '); // clean tap → type space
     spDown = false;
+    document.body.classList.remove('v2-dragging');
     spaceBtn.style.cursor = '';
   }
   spaceBtn.addEventListener('pointerup',     spStop);
