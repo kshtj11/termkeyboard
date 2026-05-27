@@ -422,7 +422,7 @@
         <div class="tkey tkey-tab"  data-action="tab">tab</div>
         <div class="tkey tkey-ctrl" data-action="ctrl" id="btn-ctrl">ctrl</div>
         <div class="tkey tkey-alt"  data-action="esc">alt</div>
-        <div class="tkey tkey-sft"  data-action="shift">shift</div>
+        <div class="tkey tkey-sft"  data-action="shift" id="btn-shift-top">shift</div>
         <div class="tkey tkey-s36"  data-char="|">|</div>
         <div class="tkey tkey-s36"  data-char="~">~</div>
         <div class="tkey tkey-s36"  data-char="/">/</div>
@@ -720,6 +720,11 @@
 
   // ── Arrow keys / history / selection ─────────
   function handleArrow(dir) {
+    // On-screen shift toggle → promote bare arrows to selection arrows
+    if (shift) {
+      if (dir === 'left')       dir = 'sel-left';
+      else if (dir === 'right') dir = 'sel-right';
+    }
     switch (dir) {
       case 'left':
         clearSel(); if (cursorPos > 0) { cursorPos--; render(); } break;
@@ -760,7 +765,11 @@
   function handleAction(act) {
     switch (act) {
       case 'shift':
-        shift = !shift; btnShift.classList.toggle('on', shift); break;
+        shift = !shift;
+        btnShift.classList.toggle('on', shift);
+        document.getElementById('btn-shift-top').classList.toggle('on', shift);
+        if (!shift) clearSel();   // turning shift off collapses selection
+        break;
       case 'del':
         if (deleteSelection()) { render(); }
         else if (cursorPos > 0) {
@@ -831,7 +840,11 @@
       if (/^[a-zA-Z]$/.test(ch)) {
         if (ctrl) { handleCtrlKey(ch.toLowerCase()); return; }
         const out = shift ? ch.toUpperCase() : ch.toLowerCase();
-        if (shift) { shift = false; btnShift.classList.remove('on'); }
+        if (shift) {
+          shift = false;
+          btnShift.classList.remove('on');
+          document.getElementById('btn-shift-top').classList.remove('on');
+        }
         typeChar(out);
       } else {
         typeChar(ch);
