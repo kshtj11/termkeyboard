@@ -73,6 +73,7 @@
       animation: blink 1s step-end infinite;
     }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    .p-sel { background: rgba(97,175,239,0.28); border-radius: 2px; }
 
     /* ── KEYBOARD WRAPPER ──────────────────────── */
     #keyboard {
@@ -547,10 +548,9 @@
   let histIdx    = -1;
   let savedInput = '';
 
-  // Live DOM refs into the active prompt line
-  let activeLine = null;
-  let spanBefore = null;
-  let spanAfter  = null;
+  // Active prompt line + selection state
+  let activeLine   = null;
+  let selectAnchor = null; // null = no selection; number = anchor end of selection
 
   // ── Prompt HTML template ──────────────────────
   const PROMPT =
@@ -563,38 +563,82 @@
     return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
+  // ── Build input HTML (handles cursor + selection) ─
+  function getInputHTML() {
+    const e = esc;
+    if (selectAnchor === null || selectAnchor === cursorPos) {
+      return '<span class="p-text">' + e(input.slice(0, cursorPos)) + '</span>' +
+             '<span class="p-cursor"> </span>' +
+             '<span class="p-text">' + e(input.slice(cursorPos)) + '</span>';
+    }
+    const s0  = Math.min(selectAnchor, cursorPos);
+    const s1  = Math.max(selectAnchor, cursorPos);
+    const pre = e(input.slice(0, s0));
+    const sel = e(input.slice(s0, s1));
+    const post= e(input.slice(s1));
+    if (cursorPos <= selectAnchor) { // cursor at left of selection
+      return '<span class="p-text">' + pre + '</span>' +
+             '<span class="p-cursor"> </span>' +
+             '<span class="p-sel">' + sel + '</span>' +
+             '<span class="p-text">' + post + '</span>';
+    } else {                         // cursor at right of selection
+      return '<span class="p-text">' + pre + '</span>' +
+             '<span class="p-sel">' + sel + '</span>' +
+             '<span class="p-cursor"> </span>' +
+             '<span class="p-text">' + post + '</span>';
+    }
+  }
+
   // ── Spawn a new prompt line at the bottom ─────
   function newPrompt() {
     activeLine = document.createElement('div');
     activeLine.className = 'line';
-    activeLine.innerHTML =
-      PROMPT +
-      '<span class="p-text"></span>' +
-      '<span class="p-cursor"> </span>' +
-      '<span class="p-text"></span>';
-    const spans = activeLine.querySelectorAll('.p-text');
-    spanBefore = spans[0];
-    spanAfter  = spans[1];
     term.appendChild(activeLine);
-    scroll();
+    render();
   }
 
   // ── Freeze active line into a static cmd line ─
   function freezeLine(cmdText, cls) {
     activeLine.innerHTML = PROMPT + '<span class="' + (cls||'p-text') + '">' + esc(cmdText) + '</span>';
     activeLine = null;
-    spanBefore = null;
-    spanAfter  = null;
+    selectAnchor = null;
   }
 
   function scroll() { term.scrollTop = term.scrollHeight; }
 
   // ── Render live input into the active line ────
   function render() {
-    if (!spanBefore) return;
-    spanBefore.textContent = input.slice(0, cursorPos);
-    spanAfter.textContent  = input.slice(cursorPos);
+    if (!activeLine) return;
+    activeLine.innerHTML = PROMPT + getInputHTML();
     scroll();
+  }
+
+  // ── Selection helpers ─────────────────────────
+  function clearSel() { selectAnchor = null; }
+
+  function deleteSelection() {
+    if (selectAnchor === null || selectAnchor === cursorPos) return false;
+    const s0 = Math.min(selectAnchor, cursorPos);
+    const s1 = Math.max(selectAnchor, cursorPos);
+    input = input.slice(0, s0) + input.slice(s1);
+    cursorPos = s0;
+    selectAnchor = null;
+    return true;
+  }
+
+  // ── Word boundary helpers ─────────────────────
+  function wordLeft() {
+    let p = cursorPos;
+    while (p > 0 && /\s/.test(input[p-1])) p--;
+    while (p > 0 && /\S/.test(input[p-1])) p--;
+    return p;
+  }
+
+  function wordRight() {
+    let p = cursorPos;
+    while (p < input.length && /\s/.test(input[p])) p++;
+    while (p < input.length && /\S/.test(input[p])) p++;
+    return p;
   }
 
   // ── Append an output line (below active line) ─
@@ -668,26 +712,47 @@
 
   // ── Type a character at cursor position ───────
   function typeChar(ch) {
+    deleteSelection();
     input = input.slice(0, cursorPos) + ch + input.slice(cursorPos);
     cursorPos++;
     render();
   }
 
-  // ── Arrow keys / history ──────────────────────
+  // ── Arrow keys / history / selection ─────────
   function handleArrow(dir) {
-    if (dir === 'left')  { if (cursorPos > 0) { cursorPos--; render(); } }
-    if (dir === 'right') { if (cursorPos < input.length) { cursorPos++; render(); } }
-    if (dir === 'up') {
-      if (!history.length) return;
-      if (histIdx === -1) savedInput = input;
-      histIdx = Math.min(history.length - 1, histIdx + 1);
-      input = history[histIdx]; cursorPos = input.length; render();
-    }
-    if (dir === 'down') {
-      if (histIdx === -1) return;
-      histIdx--;
-      input = histIdx === -1 ? savedInput : history[histIdx];
-      cursorPos = input.length; render();
+    switch (dir) {
+      case 'left':
+        clearSel(); if (cursorPos > 0) { cursorPos--; render(); } break;
+      case 'right':
+        clearSel(); if (cursorPos < input.length) { cursorPos++; render(); } break;
+      case 'word-left':
+        clearSel(); cursorPos = wordLeft(); render(); break;
+      case 'word-right':
+        clearSel(); cursorPos = wordRight(); render(); break;
+      case 'sel-left':
+        if (selectAnchor === null) selectAnchor = cursorPos;
+        if (cursorPos > 0) { cursorPos--; render(); } break;
+      case 'sel-right':
+        if (selectAnchor === null) selectAnchor = cursorPos;
+        if (cursorPos < input.length) { cursorPos++; render(); } break;
+      case 'sel-word-left':
+        if (selectAnchor === null) selectAnchor = cursorPos;
+        cursorPos = wordLeft(); render(); break;
+      case 'sel-word-right':
+        if (selectAnchor === null) selectAnchor = cursorPos;
+        cursorPos = wordRight(); render(); break;
+      case 'up':
+        clearSel();
+        if (!history.length) return;
+        if (histIdx === -1) savedInput = input;
+        histIdx = Math.min(history.length - 1, histIdx + 1);
+        input = history[histIdx]; cursorPos = input.length; render(); break;
+      case 'down':
+        clearSel();
+        if (histIdx === -1) return;
+        histIdx--;
+        input = histIdx === -1 ? savedInput : history[histIdx];
+        cursorPos = input.length; render(); break;
     }
   }
 
@@ -697,15 +762,16 @@
       case 'shift':
         shift = !shift; btnShift.classList.toggle('on', shift); break;
       case 'del':
-        if (cursorPos > 0) {
+        if (deleteSelection()) { render(); }
+        else if (cursorPos > 0) {
           input = input.slice(0, cursorPos - 1) + input.slice(cursorPos);
           cursorPos--; render();
         }
         break;
       case 'enter':
-        runCommand(input); break;
+        clearSel(); runCommand(input); break;
       case 'esc':
-        input = ''; cursorPos = 0;
+        clearSel(); input = ''; cursorPos = 0;
         shift = false; btnShift.classList.remove('on');
         render(); break;
       case 'tab':
@@ -723,7 +789,7 @@
 
   // ── CTRL + letter combos ──────────────────────
   function handleCtrlKey(k) {
-    ctrl = false; btnCtrl.classList.remove('on');
+    ctrl = false; btnCtrl.classList.remove('on'); clearSel();
     switch (k) {
       case 'c':
         // Show ^C on current line, then new prompt
@@ -781,10 +847,20 @@
     if (e.key === 'Escape')     { handleAction('esc'); return; }
     if (e.key === 'Backspace')  { handleAction('del'); return; }
     if (e.key === 'Tab')        { e.preventDefault(); handleAction('tab'); return; }
-    if (e.key === 'ArrowLeft')  { handleArrow('left');  return; }
-    if (e.key === 'ArrowRight') { handleArrow('right'); return; }
-    if (e.key === 'ArrowUp')    { e.preventDefault(); handleArrow('up');   return; }
-    if (e.key === 'ArrowDown')  { e.preventDefault(); handleArrow('down'); return; }
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      if (e.ctrlKey) handleArrow(e.shiftKey ? 'sel-word-left'  : 'word-left');
+      else           handleArrow(e.shiftKey ? 'sel-left'        : 'left');
+      return;
+    }
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      if (e.ctrlKey) handleArrow(e.shiftKey ? 'sel-word-right' : 'word-right');
+      else           handleArrow(e.shiftKey ? 'sel-right'       : 'right');
+      return;
+    }
+    if (e.key === 'ArrowUp')   { e.preventDefault(); handleArrow('up');   return; }
+    if (e.key === 'ArrowDown') { e.preventDefault(); handleArrow('down'); return; }
     if (e.ctrlKey) {
       const k = e.key.toLowerCase();
       if (['c','l','u','w'].includes(k)) { e.preventDefault(); handleCtrlKey(k); return; }
