@@ -792,8 +792,12 @@
         if (!shift) clearSel();   // turning shift off collapses selection
         break;
       case 'del':
-        if (ctrl) { handleCtrlKey('w'); } // ctrl+⌫ = delete word backward
-        else if (deleteSelection()) { render(); }
+        if (ctrl) {
+          // ctrl+⌫ = delete word backward; keep ctrl ON for repeated deletes
+          const before = input.slice(0, cursorPos).replace(/\S+\s*$/, '');
+          input = before + input.slice(cursorPos);
+          cursorPos = before.length; render();
+        } else if (deleteSelection()) { render(); }
         else if (cursorPos > 0) {
           input = input.slice(0, cursorPos - 1) + input.slice(cursorPos);
           cursorPos--; render();
