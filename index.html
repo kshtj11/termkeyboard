@@ -329,6 +329,11 @@
 
     /* ── VARIANT 2 overrides ───────────────────────── */
     body.v2 #trackpoint { display: none; }
+
+    /* ── VARIANT 3 overrides ───────────────────────── */
+    /* kbd-body + terminal become a giant trackpad; touch-action off so pointer events fire cleanly */
+    body.v3 #terminal { touch-action: none; }
+    body.v3 #kbd-body  { touch-action: none; }
     body.v2 .bkey-space {
       align-items: flex-end;
       padding-bottom: 5px;
@@ -387,6 +392,7 @@
   <div id="variant-toggle">
     <span class="vtab active" id="vt1" data-v="1">1</span>
     <span class="vtab"        id="vt2" data-v="2">2</span>
+    <span class="vtab"        id="vt3" data-v="3">3</span>
   </div>
 
   <!-- ── TERMINAL: single scrollable area, prompt inline ── -->
@@ -734,6 +740,7 @@
     const t = e.target.closest('[data-char],[data-action]');
     if (!t || t === trackpoint) return;
     if (tsDidDrag && t.closest('#row-term-inner')) { tsDidDrag = false; return; }
+    if (v3DidDrag && !t.closest('#row-term') && !t.closest('#variant-toggle')) { v3DidDrag = false; return; }
     const ch  = t.dataset.char;
     const act = t.dataset.action;
 
@@ -804,8 +811,10 @@
   function setVariant(v) {
     variant = v;
     document.body.classList.toggle('v2', v === 2);
+    document.body.classList.toggle('v3', v === 3);
     document.getElementById('vt1').classList.toggle('active', v === 1);
     document.getElementById('vt2').classList.toggle('active', v === 2);
+    document.getElementById('vt3').classList.toggle('active', v === 3);
   }
 
   document.getElementById('variant-toggle').addEventListener('click', e => {
@@ -846,6 +855,38 @@
   }
   spaceBtn.addEventListener('pointerup',     spStop);
   spaceBtn.addEventListener('pointercancel', spStop);
+
+  // ── v3: whole kbd-body + terminal as trackpad ─
+  const appEl  = document.getElementById('app');
+  const kbdBody = document.getElementById('kbd-body');
+  const V3_STEP = 7;
+  let v3Down = false, v3DidDrag = false;
+  let v3LastX = 0, v3LastY = 0, v3AccX = 0, v3AccY = 0;
+
+  appEl.addEventListener('pointerdown', e => {
+    if (variant !== 3) return;
+    // Exclude: modifier bar, trackpoint, variant toggle
+    if (e.target.closest('#row-term') ||
+        e.target.closest('#trackpoint') ||
+        e.target.closest('#variant-toggle')) return;
+    v3Down = true; v3DidDrag = false;
+    v3LastX = e.clientX; v3LastY = e.clientY;
+    v3AccX = 0; v3AccY = 0;
+  }, { capture: true });
+
+  appEl.addEventListener('pointermove', e => {
+    if (!v3Down || variant !== 3) return;
+    const dx = e.clientX - v3LastX, dy = e.clientY - v3LastY;
+    v3LastX = e.clientX; v3LastY = e.clientY;
+    v3AccX += dx; v3AccY += dy;
+    while (v3AccX >=  V3_STEP) { handleArrow('right'); v3AccX -= V3_STEP; v3DidDrag = true; }
+    while (v3AccX <= -V3_STEP) { handleArrow('left');  v3AccX += V3_STEP; v3DidDrag = true; }
+    while (v3AccY >=  V3_STEP) { handleArrow('down');  v3AccY -= V3_STEP; v3DidDrag = true; }
+    while (v3AccY <= -V3_STEP) { handleArrow('up');    v3AccY += V3_STEP; v3DidDrag = true; }
+  }, { capture: true });
+
+  appEl.addEventListener('pointerup',     () => { v3Down = false; }, { capture: true });
+  appEl.addEventListener('pointercancel', () => { v3Down = false; v3DidDrag = false; }, { capture: true });
 
   // ── Trackpoint — radial pie-menu ─────────────
   const radial  = document.getElementById('tp-radial');
