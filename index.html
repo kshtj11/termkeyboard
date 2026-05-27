@@ -895,10 +895,8 @@
   termInner.addEventListener('pointermove', e => {
     if (!tsDown) return;
     const dx = e.clientX - tsX0;
-    if (Math.abs(dx) > 3) {
-      tsDidDrag = true;
-      termInner.scrollLeft = tsSL0 - dx;
-    }
+    if (Math.abs(dx) > 2) termInner.scrollLeft = tsSL0 - dx; // scroll starts early
+    if (Math.abs(dx) > 8) tsDidDrag = true;                   // block key only past touch-slop
   });
   termInner.addEventListener('pointerup', () => {
     tsDown = false;
