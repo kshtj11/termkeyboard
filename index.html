@@ -792,7 +792,8 @@
         if (!shift) clearSel();   // turning shift off collapses selection
         break;
       case 'del':
-        if (deleteSelection()) { render(); }
+        if (ctrl) { handleCtrlKey('w'); } // ctrl+⌫ = delete word backward
+        else if (deleteSelection()) { render(); }
         else if (cursorPos > 0) {
           input = input.slice(0, cursorPos - 1) + input.slice(cursorPos);
           cursorPos--; render();
@@ -887,7 +888,7 @@
   document.addEventListener('keydown', e => {
     if (e.key === 'Enter')      { e.preventDefault(); handleAction('enter'); return; }
     if (e.key === 'Escape')     { handleAction('esc'); return; }
-    if (e.key === 'Backspace')  { handleAction('del'); return; }
+    if (e.key === 'Backspace')  { e.preventDefault(); if (e.ctrlKey) handleCtrlKey('w'); else handleAction('del'); return; }
     if (e.key === 'Tab')        { e.preventDefault(); handleAction('tab'); return; }
     if (e.key === 'ArrowLeft') {
       e.preventDefault();
