@@ -438,7 +438,6 @@
       <div id="row-term-inner">
         <div class="tkey tkey-tab"  data-action="tab">tab</div>
         <div class="tkey tkey-ctrl" data-action="ctrl" id="btn-ctrl">ctrl</div>
-        <div class="tkey tkey-alt"  data-action="alt" id="btn-alt-top">alt</div>
         <div class="tkey tkey-sft"  data-action="shift" id="btn-shift-top">shift</div>
         <div class="tkey tkey-s36"  data-char="|">|</div>
         <div class="tkey tkey-s36"  data-char="~">~</div>
@@ -560,7 +559,6 @@
   let cursorPos  = 0;
   let shift      = false;
   let ctrl       = false;
-  let alt        = false;
   let numMode    = false;
   let history    = [];
   let histIdx    = -1;
@@ -740,7 +738,7 @@
   function handleArrow(dir) {
     // Apply on-screen modifier toggles to bare arrow directions
     if (dir === 'left' || dir === 'right') {
-      const word = ctrl || alt;
+      const word = ctrl;
       const sel  = shift;
       if (word && sel)  dir = dir === 'left' ? 'sel-word-left'  : 'sel-word-right';
       else if (word)    dir = dir === 'left' ? 'word-left'       : 'word-right';
@@ -792,7 +790,13 @@
         if (!shift) clearSel();   // turning shift off collapses selection
         break;
       case 'del':
-        if (deleteSelection()) { render(); break; } // selection always wins
+        if (deleteSelection()) {
+          // selection always wins; also clear all modifier toggles
+          shift = false; btnShift.classList.remove('on');
+          document.getElementById('btn-shift-top').classList.remove('on');
+          ctrl  = false; btnCtrl.classList.remove('on');
+          render(); break;
+        }
         if (ctrl) {
           // ctrl+⌫ = delete word backward; keep ctrl ON for repeated deletes
           const before = input.slice(0, cursorPos).replace(/\S+\s*$/, '');
@@ -814,8 +818,6 @@
         cursorPos += 2; render(); break;
       case 'ctrl':
         ctrl = !ctrl; btnCtrl.classList.toggle('on', ctrl); break;
-      case 'alt':
-        alt = !alt; document.getElementById('btn-alt-top').classList.toggle('on', alt); break;
       case 'toggle-num':
         numMode = !numMode;
         document.body.classList.toggle('num-mode', numMode);
@@ -827,7 +829,6 @@
   // ── CTRL + letter combos ──────────────────────
   function handleCtrlKey(k) {
     ctrl = false; btnCtrl.classList.remove('on');
-    alt  = false; document.getElementById('btn-alt-top').classList.remove('on');
     clearSel();
     switch (k) {
       case 'c':
@@ -874,10 +875,6 @@
           shift = false;
           btnShift.classList.remove('on');
           document.getElementById('btn-shift-top').classList.remove('on');
-        }
-        if (alt) {
-          alt = false;
-          document.getElementById('btn-alt-top').classList.remove('on');
         }
         typeChar(out);
       } else {

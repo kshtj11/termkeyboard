@@ -15,7 +15,7 @@ body
 │ └ #keyboard
 │   ├ #row-term               scrollable modifier bar
 │   │ ├ #row-term-inner         pointer-drag scrollable flex row
-│   │ │   .tkey × N             tab/ctrl/alt/shift/| ~ / - : * > &
+│   │ │   .tkey × N             tab/ctrl/shift/| ~ / - : * > &
 │   │ └ .row-term-fade-l/r      gradient masks
 │   └ #kbd-body
 │     ├ #keys-layout            position:relative
@@ -35,7 +35,7 @@ Keys carry `data-char="x"` (types) or `data-action="name"` (dispatched to `handl
 ```
 input, cursorPos         // text + caret
 selectAnchor             // null | number — selection start; cursor is the other end
-shift, ctrl, alt         // sticky-toggle modifiers
+shift, ctrl              // sticky-toggle modifiers
 numMode                  // QWERTY ↔ numpad (body.num-mode)
 history, histIdx, savedInput
 activeLine               // current prompt <div>, or null when frozen
@@ -54,8 +54,8 @@ variant                  // 1 | 2 | 3 (extend setVariant for more)
 | `runCommand(cmd)` | freeze → dispatch built-in → newPrompt |
 | `typeChar(ch)` | deleteSelection first, then insert |
 | `handleArrow(dir)` | reads shift/ctrl/alt, rewrites `dir`, dispatches 12 cases |
-| `handleAction(act)` | shift / ctrl / alt / del / enter / esc / tab / toggle-num / fn |
-| `handleCtrlKey(k)` | C/L/U/W — clears ctrl + alt + selection |
+| `handleAction(act)` | shift / ctrl / del / enter / esc / tab / toggle-num / fn |
+| `handleCtrlKey(k)` | C/L/U/W — clears ctrl + selection |
 | `wordLeft()` / `wordRight()` | bash-style boundaries |
 | `deleteSelection()` | returns true if it removed a range |
 | `clearSel()` | selectAnchor = null |
@@ -68,16 +68,15 @@ Built-in commands in `runCommand`: `clear`/`cls`, `echo`, `date`, `pwd`, `env`, 
 
 ## Modifier toggle pattern (critical)
 
-`shift`, `ctrl`, `alt` are **sticky toggles**, not held keys.
+`shift`, `ctrl` are **sticky toggles**, not held keys.
 
 - Tap modifier → ON. Button gets `.on` class. Top-bar + keyboard-body buttons are **synced** (e.g., `btn-shift` and `btn-shift-top`).
 - Persistence rules:
-  - **shift**: cleared by tapping again, OR after typing a letter (auto-clear). Turning shift OFF also collapses selection.
-  - **ctrl**: cleared by tapping again, OR after `handleCtrlKey` fires (C/L/U/W). Stays ON through `ctrl+⌫` (so you can repeat).
-  - **alt**: cleared by tapping again, OR after typing a letter, OR via `handleCtrlKey`.
+  - **shift**: cleared by tapping again, OR after typing a letter (auto-clear), OR after a selection-delete (⌫ on selection). Turning shift OFF also collapses selection.
+  - **ctrl**: cleared by tapping again, OR after `handleCtrlKey` fires (C/L/U/W), OR after a selection-delete. Stays ON through `ctrl+⌫` (so you can repeat).
 - `handleArrow` reads flags at the top and rewrites `dir`:
   - `shift` → `sel-*`
-  - `ctrl || alt` → `word-*`
+  - `ctrl` → `word-*`
   - both → `sel-word-*`
 - Physical keyboard uses `e.shiftKey` / `e.ctrlKey` directly in the `keydown` handler (not these flags).
 
