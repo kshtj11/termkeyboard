@@ -334,21 +334,22 @@
     /* kbd-body + terminal become a giant trackpad; touch-action off so pointer events fire cleanly */
     body.v3 #terminal { touch-action: none; }
     body.v3 #kbd-body  { touch-action: none; }
-    /* Keys: hide labels, flatten — becomes a pure trackpad surface */
-    body.v3 .key {
-      color: transparent;
+    /* Keys animate when drag begins */
+    body.v3 .key,
+    body.v3 .key-shift,
+    body.v3 .key-del,
+    body.v3 .bkey { transition: color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease; }
+    /* While dragging: dim labels, darken keys */
+    body.v3-dragging .key {
+      color: rgba(221,221,221,0.18);
       background: #232323;
       border-color: #232323;
       box-shadow: none;
     }
-    body.v3 .key-shift { color: transparent; background: #303030; }
-    body.v3 .key-del   { color: transparent; background: #282828; }
-    body.v3 .bkey      { color: transparent; }
-    body.v3 .bkey-kbd svg { visibility: hidden; }
-    /* Close up gaps */
-    body.v3 #keys-layout { gap: 5px; }
-    body.v3 .row         { gap: 5px; }
-    body.v3 #row-bottom  { gap: 4px; }
+    body.v3-dragging .key-shift { color: rgba(221,221,221,0.18); background: #2f2f2f; }
+    body.v3-dragging .key-del   { color: rgba(221,221,221,0.18); background: #292929; }
+    body.v3-dragging .bkey      { color: rgba(221,221,221,0.15); }
+    body.v3-dragging .bkey-kbd svg { opacity: 0.15; }
     body.v2 .bkey-space {
       align-items: flex-end;
       padding-bottom: 5px;
@@ -894,14 +895,22 @@
     const dx = e.clientX - v3LastX, dy = e.clientY - v3LastY;
     v3LastX = e.clientX; v3LastY = e.clientY;
     v3AccX += dx; v3AccY += dy;
+    // Dim keyboard as soon as finger moves a little
+    if (Math.abs(v3AccX) > 3 || Math.abs(v3AccY) > 3) {
+      document.body.classList.add('v3-dragging');
+    }
     while (v3AccX >=  V3_STEP) { handleArrow('right'); v3AccX -= V3_STEP; v3DidDrag = true; }
     while (v3AccX <= -V3_STEP) { handleArrow('left');  v3AccX += V3_STEP; v3DidDrag = true; }
     while (v3AccY >=  V3_STEP) { handleArrow('down');  v3AccY -= V3_STEP; v3DidDrag = true; }
     while (v3AccY <= -V3_STEP) { handleArrow('up');    v3AccY += V3_STEP; v3DidDrag = true; }
   }, { capture: true });
 
-  appEl.addEventListener('pointerup',     () => { v3Down = false; }, { capture: true });
-  appEl.addEventListener('pointercancel', () => { v3Down = false; v3DidDrag = false; }, { capture: true });
+  function v3Stop() {
+    v3Down = false;
+    document.body.classList.remove('v3-dragging');
+  }
+  appEl.addEventListener('pointerup',     () => { v3Stop(); }, { capture: true });
+  appEl.addEventListener('pointercancel', () => { v3Stop(); v3DidDrag = false; }, { capture: true });
 
   // ── Trackpoint — radial pie-menu ─────────────
   const radial  = document.getElementById('tp-radial');
