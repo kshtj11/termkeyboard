@@ -20,8 +20,8 @@
     }
 
     #app {
-      width: 480px;
-      height: 480px;
+      width: 540px;
+      height: 620px;
       flex-shrink: 0;
       display: flex;
       flex-direction: column;
@@ -33,9 +33,9 @@
     #terminal {
       flex: 1 1 0;
       min-height: 0;
-      background: #0f0f0f;
+      background: #161616;
       overflow-y: auto;
-      padding: 10px 14px;
+      padding: 10px 20px;
       scrollbar-width: thin;
       scrollbar-color: #2a2a2a transparent;
     }
@@ -45,48 +45,48 @@
     /* Every line in the terminal */
     .line {
       font-size: 16px;
-      line-height: 1.7;
+      line-height: 1.25;
       white-space: pre-wrap;
       word-break: break-all;
-      min-height: 1.7em;
+      min-height: 1.25em;
     }
 
     /* Output lines */
-    .line-out  { color: #888; }
-    .line-err  { color: #e06c75; }
-    .line-info { color: #61afef; }
+    .line-out  { color: #E0E0E0; }
+    .line-err  { color: #E05050; }
+    .line-info { color: #E26600; }
 
-    /* Prompt colors — used in both active and frozen cmd lines */
-    .p-name { color: #98c379; }           /* user@termkeyboard */
-    .p-col  { color: #abb2bf; }           /* : */
-    .p-path { color: #e5c07b; }           /* ~ */
-    .p-dol  { color: #abb2bf; }           /* $ */
-    .p-text { color: #eee; }              /* typed text */
+    /* Prompt colors */
+    .p-name { color: #E26600; }
+    .p-col  { color: #E26600; }
+    .p-path { color: #E26600; }
+    .p-dol  { color: #E26600; }
+    .p-text { color: #E0E0E0; }
 
     /* Blinking block cursor */
     .p-cursor {
       display: inline-block;
       width: 7.8px;
       height: 1em;
-      background: #abb2bf;
+      background: #E0E0E0;
       vertical-align: text-bottom;
       animation: blink 1s step-end infinite;
     }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-    .p-sel { background: rgba(97,175,239,0.28); border-radius: 2px; }
+    .p-sel { background: rgba(226,102,0,0.25); border-radius: 2px; }
 
     /* ── KEYBOARD WRAPPER ──────────────────────── */
     #keyboard {
       flex-shrink: 0;
-      background: #151515;
+      background: #0B0B0B;
       padding-top: 4px;
-      width: 480px;
+      width: 540px;
     }
 
     /* ── ROW 0: TERMINAL SPECIAL KEYS (scrollable) ── */
     #row-term {
       position: relative;
-      height: 60px;
+      height: 61px;
       background: #0b0b0b;
       backdrop-filter: blur(11px);
       overflow: hidden;
@@ -107,20 +107,21 @@
     .row-term-fade {
       position: absolute;
       top: 0; bottom: 0;
-      width: 36px;
       pointer-events: none;
     }
     .row-term-fade-l {
       left: 0;
-      background: linear-gradient(to right, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 100%);
+      width: 40px;
+      background: linear-gradient(to right, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0) 100%);
     }
     .row-term-fade-r {
       right: 0;
-      background: linear-gradient(to left, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 100%);
+      width: 100px;
+      background: linear-gradient(to right, rgba(0,0,0,0) 0%, #000 100%);
     }
 
     .tkey {
-      height: 44px;
+      height: 45px;
       background: #3a3a3a;
       border-radius: 6px;
       display: flex;
@@ -136,47 +137,45 @@
     }
     .tkey:active, .tkey.on { background: #555; }
     .tkey-tab  { width: 50px; }
-    .tkey-ctrl { width: 52px; }
-    .tkey-alt  { width: 44px; }
+    .tkey-ctrl { width: 55px; }
     .tkey-sft  { width: 58px; }
     .tkey-s36  { width: 36px; padding: 0 6px; }
     .tkey-s38  { width: 38px; padding: 0 6px; }
 
     /* ── KEYBOARD BODY ─────────────────────────── */
     #kbd-body {
-      border: 1px solid #222;
-      padding-bottom: 10px;
+      padding-bottom: 12px;
     }
 
     /*
-      Key grid for 480px:
-      QWERTY:    10×38 + 9×8  = 452px centred in 480 ✓
-      ASDFGHJKL: 9×38  + 8×8  = 406px + 8px pad = 414px ✓
-      ZXCVBNM:   7×38  + 6×8  = 314px centred in 480 ✓
+      Key grid for 540px (44px keys, 10px gap):
+      QWERTY:    10×44 + 9×10 = 530px centred in 540
+      ASDFGHJKL: 9×44  + 8×10 = 476px centred in 540
+      ZXCVBNM:   7×44  + 6×10 = 368px centred in 540
 
       Trackpoint between G/H and V/B:
-        G right=259, H left=267 → x-centre=263 → left=263-17=246
-        Row2 bottom=92, Row3 top=100 → y-centre=96 → top=96-17=79
+        G right=292, H left=302 → x-centre=297 → left=297-17=280
+        Row2 bottom≈107, Row3 top≈116 → top=97 (Figma)
     */
     #keys-layout {
       position: relative;
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      padding: 8px 0;
-      width: 480px;
+      gap: 9px;
+      padding: 10px 0;
+      width: 540px;
     }
 
     .key {
-      width: 38px;
-      height: 38px;
+      width: 44px;
+      height: 44px;
       background: #3a3a3a;
       border: 1px solid #3a3a3a;
       display: flex;
       align-items: center;
       justify-content: center;
       color: #ddd;
-      font-size: 18px;
+      font-size: 20px;
       box-shadow: 0 1px 0 #222;
       cursor: pointer;
       user-select: none;
@@ -187,12 +186,12 @@
 
     .row {
       display: flex;
-      gap: 8px;
-      height: 38px;
+      gap: 10px;
+      height: 44px;
       align-items: center;
       justify-content: center;
     }
-    .row-pad { padding: 0 4px; }
+    .row-pad { padding: 0 5px; }
 
     .alpha-row   { display: flex; }
     .num-row     { display: none; }
@@ -205,13 +204,13 @@
 
     .row-shift {
       position: relative;
-      height: 38px;
-      width: 480px;
+      height: 44px;
+      width: 540px;
     }
     .key-shift {
       position: absolute;
-      left: 10px; top: 0;
-      width: 58px; height: 38px;
+      left: 12px; top: 0;
+      width: 64px; height: 44px;
       background: #636363;
       display: flex;
       align-items: center;
@@ -226,8 +225,8 @@
 
     .key-del {
       position: absolute;
-      right: 10px; top: 0;
-      width: 58px; height: 38px;
+      right: 12px; top: 0;
+      width: 64px; height: 44px;
       background: #474747;
       display: flex;
       align-items: center;
@@ -243,11 +242,9 @@
     /* ── TRACKPOINT ────────────────────────────── */
     #trackpoint {
       position: absolute;
-      top: 79px; left: 246px;
+      top: 97px; left: 280px;
       width: 34px; height: 34px;
-      border-radius: 8px;
-      background: #181818;
-      border: 1px solid #2e2e2e;
+      background: #151515;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -255,18 +252,23 @@
       cursor: grab;
       user-select: none;
       touch-action: none;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.04);
     }
     #trackpoint.dragging { cursor: grabbing; }
     #tp-nub {
-      width: 13px; height: 13px;
-      border-radius: 50%;
-      background: radial-gradient(circle at 38% 35%, #d4d4d4, #7a7a7a);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.9), 0 0 0 1.5px #111, inset 0 1px 1px rgba(255,255,255,0.25);
+      width: 16px; height: 16px;
+      border-radius: 3px;
+      background: #3a3a3a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       pointer-events: none;
-      transition: transform 0.06s ease;
     }
-    #trackpoint.dragging #tp-nub { transform: scale(0.88); }
+    #tp-nub::after {
+      content: '';
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #ddd;
+    }
     /* Extend hit area without changing the visual */
     #trackpoint::before {
       content: '';
@@ -277,13 +279,13 @@
     /* ── BOTTOM ROW ────────────────────────────── */
     #row-bottom {
       display: flex;
-      gap: 6px;
+      gap: 8px;
       align-items: center;
-      padding: 0 6px;
-      height: 40px;
+      padding: 0 10px;
+      height: 44px;
     }
     .bkey {
-      height: 40px;
+      height: 44px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -295,13 +297,13 @@
       flex-shrink: 0;
     }
     .bkey:active { filter: brightness(1.4); }
-    .bkey-kbd   { width: 46px; background: #3a3a3a; border-bottom: 1px solid #2a2a2a; }
-    .bkey-123   { width: 56px; background: #2d2d2d; font-size: 14px; font-weight: 700; box-shadow: 0 1.125px 0 #2a2a2a; }
-    .bkey-fn    { width: 34px; background: #2d2d2d; font-size: 16px; font-weight: 500; box-shadow: 0 1.125px 0 #2a2a2a; }
-    .bkey-comma { width: 34px; background: #2d2d2d; font-size: 16px; box-shadow: 0 1.125px 0 #2a2a2a; }
-    .bkey-space { flex: 1 1 0; min-width: 0; background: #474747; border: 1px solid #474747; font-size: 16px; box-shadow: 0 1px 0 #222; color: #555; }
-    .bkey-dot   { width: 38px; background: #2d2d2d; font-size: 16px; font-weight: 500; box-shadow: 0 1.125px 0 #2a2a2a; }
-    .bkey-done  { width: 62px; background: #636363; font-size: 18px; box-shadow: 0 1.125px 0 #2a2a2a; color: #eee; }
+    .bkey-kbd   { display: none; }
+    .bkey-123   { width: 64px; background: #2d2d2d; font-size: 16px; font-weight: 700; box-shadow: 0 1.125px 0 #2a2a2a; }
+    .bkey-fn    { width: 40px; background: #2d2d2d; font-size: 18px; font-weight: 500; box-shadow: 0 1.125px 0 #2a2a2a; }
+    .bkey-comma { width: 40px; background: #2d2d2d; font-size: 18px; box-shadow: 0 1.125px 0 #2a2a2a; }
+    .bkey-space { flex: 1 1 0; min-width: 0; background: #474747; border: 1px solid #474747; font-size: 18px; box-shadow: 0 1px 0 #222; color: #555; }
+    .bkey-dot   { width: 44px; background: #2d2d2d; font-size: 18px; font-weight: 500; box-shadow: 0 1.125px 0 #2a2a2a; }
+    .bkey-done  { width: 70px; background: #636363; font-size: 20px; box-shadow: 0 1.125px 0 #2a2a2a; color: #eee; }
 
     /* ── VARIANT TOGGLE ───────────────────────────── */
     #variant-toggle {
@@ -365,12 +367,12 @@
     #v3-sec-left  { clip-path: polygon(0% 100%, 0% 0%, 50% 50%); }
     .v3-sec.active { background: rgba(255,255,255,0.14); }
     body.v3 #trackpoint {
-      transition: width 0.1s ease, height 0.1s ease, top 0.1s ease, left 0.1s ease, border-radius 0.1s ease;
+      transition: width 0.1s ease, height 0.1s ease, top 0.1s ease, left 0.1s ease, border-radius 0.1s ease, background 0.1s ease;
     }
     body.v3 #trackpoint.dragging {
       width: 80px; height: 80px;
       border-radius: 50%;
-      top: 56px; left: 223px;
+      top: 74px; left: 257px;
       overflow: hidden;
       border: 1.5px solid #555;
       background: #1a1a1a;

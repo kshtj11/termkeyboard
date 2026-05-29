@@ -8,7 +8,7 @@ When prototyping a new variant, treat all dimensions/colors as soft. Only the ar
 
 ```
 body
-├ #app                        root container, fixed size (square)
+├ #app                        root container, 540×620
 │ ├ #variant-toggle           thin top bar with .vtab × N (1, 2, 3, …)
 │ ├ #terminal                 scrollable; .line divs (output + active prompt)
 │ │                           active prompt is ALWAYS the last child
